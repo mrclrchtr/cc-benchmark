@@ -1,0 +1,3 @@
+[submodule "polyglot-benchmark"]
+	path = polyglot-benchmark
+	url = git@github.com:Aider-AI/polyglot-benchmark.git
