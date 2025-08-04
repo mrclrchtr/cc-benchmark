@@ -1,56 +1,78 @@
 # Claude Code Benchmark Vision (cc-benchmark)
 
-## What This Is
+## Core Hypothesis
 
-A fork of aider's benchmark adapted to evaluate Claude Code performance. This enables direct comparison between aider and Claude Code using identical Exercism exercises.
+Claude Code outperforms aider at solving Exercism programming exercises. This project will quantitatively prove or disprove this hypothesis.
 
-## Why This Exists
+## What This Actually Is
 
-- No benchmarking tool currently exists for Claude Code
-- Claude Code is an agentic framework, not just a model - existing model benchmarks don't capture its capabilities  
-- To fairly compare aider vs Claude Code, they need to run the same exercises
-- Forking aider's proven approach is faster than building from scratch
+A personal benchmarking tool that:
+- Forks aider's proven benchmark infrastructure (MIT licensed)
+- Runs identical Exercism exercises through Claude Code
+- Produces quantitative comparisons between Claude Code and aider
+
+## Why Build This
+
+- **Personal validation**: I believe Claude Code is better and want data to support/refute this
+- **No existing comparison**: Despite both tools being popular, no head-to-head comparison exists
+- **Community value**: Other developers choosing between aider and Claude Code need objective data
+
+## Success Metrics
+
+### Primary Metric
+- **Pass rate**: Percentage of exercises solved correctly on first attempt
+
+### Secondary Metrics  
+- **Iterations to solution**: Number of attempts needed to pass all tests
+- **Code quality**: Cyclomatic complexity, line count, readability scores
+- **Failure analysis**: Categories of exercises where each tool struggles
 
 ## Technical Approach
 
-### Safety First
-Following aider's methodology, all code execution occurs within isolated Docker containers to prevent security risks from AI-generated code.
+### Proven Foundation
+- Fork aider's polyglot-benchmark (validated to work with Claude Code)
+- Maintain Docker-based isolation for safe code execution
+- Preserve exercise format compatibility for direct comparison
 
-### What We're Forking
-- **aider's polyglot-benchmark**: Curated collection of programming exercises from Exercism's language tracks
-- **aider's benchmark harness**: Tools and infrastructure needed to run the benchmarking suite
+### Key Adaptations
+- Replace aider CLI calls with Claude Code CLI interface
+- Parse Claude Code output format for test results
+- Handle Claude Code's interactive workflow programmatically
 
-### Adaptation Requirements
-The harness will be modified to:
-- Execute Claude Code instead of aider
-- Handle Claude Code's CLI interface and workflow
-- Maintain compatibility with aider's exercise format and scoring system
+## Scope Boundaries
 
-## v1.0 Goals (2 weeks)
+### What This IS
+- A benchmarking tool for Exercism exercises
+- A quantitative comparison framework
+- A personal project with community benefit
 
-- Fork aider's polyglot-benchmark and benchmark harness
-- Analyze and adapt harness to execute Claude Code instead of aider
-- Test default Claude Code configuration across all Exercism languages
-- **Success criteria**: Claude Code can run the exercises and produce scores
+### What This IS NOT
+- A comprehensive AI coding assistant evaluation
+- A real-world development workflow test
+- A sponsored or official comparison
 
-## Future Iterations
+## v1.0 Definition of Done
 
-### v1.1: Direct Comparison
-- Compare Claude Code results against existing aider benchmark scores from the leaderboard
-- Generate side-by-side performance comparisons using the same exercise sets
-- Identify strengths and weaknesses of each approach
+Claude Code can:
+1. Run all exercises from aider's polyglot-benchmark
+2. Produce pass/fail scores for each exercise
+3. Generate comparison data against aider's published results
+4. Output results in a reproducible, shareable format
 
-### v1.2: Configuration Testing  
-- Test different Claude Code configurations (MCP servers, different models)
-- Optimize configurations based on benchmark results
-- Track performance improvements over different setups
+## Risk Acknowledgments
 
-## Implementation Notes
+- **Bias risk**: I expect Claude Code to win. Results will be published regardless of outcome.
+- **Scope risk**: Exercism exercises may not represent real-world coding tasks
+- **Cost risk**: API costs are acceptable for personal project scope
+- **Maintenance risk**: Claude Code interface changes will require updates
 
-- **Language Coverage**: All Exercism languages supported by the original benchmark
-- **Development Tool**: Using Claude Code itself to implement the benchmark adaptation
-- **Scope**: Basic benchmarking functionality only - no web interfaces or enterprise features
+## Future Considerations
 
-## Expected Outcome
+Once baseline comparison is established:
+- Test different Claude Code configurations
+- Expand to non-Exercism benchmarks if results prove interesting
+- Open source for community contributions and validation
 
-A practical tool that answers the question: "Should I use aider or Claude Code for my coding tasks?" by comparing Claude Code benchmark results against existing aider leaderboard data with quantitative analysis.
+## Bottom Line
+
+This is a personal project to quantify my belief that Claude Code > aider at code generation tasks. The benchmarking framework will be objective, even if my hypothesis isn't. Results will be published whether they confirm or refute my expectations.
