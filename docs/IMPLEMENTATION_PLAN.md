@@ -121,7 +121,7 @@ from pathlib import Path
 from claude_code_sdk import query, ClaudeCodeOptions, Message
 
 class ClaudeCodeWrapper:
-    def __init__(self, model="claude-3-5-sonnet-20241022", verbose=False):
+    def __init__(self, model="claude-sonnet-4-0", verbose=False):
         self.model = model
         self.verbose = verbose
         self.session_id = None
@@ -295,7 +295,7 @@ vim benchmark/cc_wrapper.py  # Copy code from above
 # Modify benchmark.py to add --use-claude-code flag
 # Run MVP test
 cd benchmark
-python benchmark.py python-10 --use-claude-code --model claude-3-5-sonnet-20241022
+python benchmark.py python-10 --use-claude-code --model claude-sonnet-4-0
 ```
 
 ### Day 3-5: Full Run

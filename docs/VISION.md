@@ -20,33 +20,39 @@ A personal benchmarking tool that:
 ## Success Metrics
 
 ### Primary Metric
-- **Pass rate**: Percentage of exercises solved correctly on first attempt
+- **Pass rate**: Beat aider's 85% pass rate as the key validation benchmark
 
-### Secondary Metrics  
+### Secondary Metrics
 - **Iterations to solution**: Number of attempts needed to pass all tests
 - **Code quality**: Cyclomatic complexity, line count, readability scores
 - **Failure analysis**: Categories of exercises where each tool struggles
+- **Performance patterns**: Identify specific exercise types where Claude Code excels or underperforms
 
 ## Technical Foundation
 
-### Claude Code SDK
-- Claude Code provides official SDKs for programmatic integration (TypeScript and Python)
-- SDK enables structured output formats (JSON, streaming JSON) with well-defined message schemas
-- Built-in session management with `--continue` and `--resume` for multi-turn conversations
-- Non-interactive mode (`-p` flag) designed specifically for automation use cases
+### Proven Benchmark Infrastructure
+- Built on aider's established polyglot-benchmark framework with validated Exercism exercises
+- Leverages existing Docker-based multi-language testing environment
+- Reuses 95% of existing infrastructure with minimal integration changes
+
+### Claude Code Integration Advantages
+- Official Python SDK provides structured, reliable programmatic access
+- Built-in session management eliminates complex state handling
+- Typed responses and error handling reduce integration complexity
+- Designed for automation with non-interactive modes
 
 ## Technical Approach
 
-### Proven Foundation
-- Fork aider's polyglot-benchmark (validated to work with Claude Code)
-- Maintain Docker-based isolation for safe code execution
-- Preserve exercise format compatibility for direct comparison
+### Minimal Integration Strategy
+- Single integration point replacement in existing benchmark framework
+- Preserve all existing test infrastructure and exercise formats
+- Maintain Docker-based isolation for identical testing conditions
+- Direct result comparison using same scoring methodology
 
-### Key Adaptations
-- Integrate Claude Code using official Python SDK instead of raw CLI calls
-- Leverage SDK's structured message types for reliable result parsing
-- Use SDK's session management for handling test iterations
-- Benefit from SDK's error handling and type safety
+### Rapid Validation Timeline
+- MVP validation achievable in 2-3 days for Python exercises
+- Full multi-language benchmark completable within one week
+- Quick hypothesis testing rather than extensive development project
 
 ## Scope Boundaries
 
@@ -62,18 +68,23 @@ A personal benchmarking tool that:
 
 ## v1.0 Definition of Done
 
-Claude Code can:
-1. Run all exercises from aider's polyglot-benchmark
-2. Produce pass/fail scores for each exercise
-3. Generate comparison data against aider's published results
-4. Output results in a reproducible, shareable format
+### MVP Validation (Python Focus)
+1. Beat aider's 85% pass rate on Python exercises
+2. Successfully process all exercises from aider's polyglot-benchmark
+3. Generate direct comparison data using identical scoring methodology
+
+### Full Benchmark Completion
+1. Multi-language validation across all supported exercise types
+2. Reproducible results with detailed failure analysis
+3. Shareable comparison report with statistical significance
 
 ## Risk Acknowledgments
 
 - **Bias risk**: I expect Claude Code to win. Results will be published regardless of outcome.
 - **Scope risk**: Exercism exercises may not represent real-world coding tasks
-- **Cost risk**: API costs are acceptable for personal project scope
-- **Maintenance risk**: Claude Code interface changes will require updates
+- **Integration risk**: Lower than initially expected due to SDK reliability and minimal changes required
+- **Cost risk**: Rapid validation timeline keeps API costs within acceptable personal project limits
+- **Reproducibility risk**: Results depend on Claude Code's consistency across test runs
 
 ## Future Considerations
 
