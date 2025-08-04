@@ -6,7 +6,7 @@ This document tracks all project milestones and their completion status.
 ## Active Milestones
 
 ### Phase 1 - MVP
-1. [M1_MVP_Test_Hypothesis.md](milestones/M1_MVP_Test_Hypothesis.md) - [ ] Test core hypothesis with 10 Python exercises
+1. [M1_MVP_Test_the_Hypothesis.md](milestones/M1_MVP_Test_the_Hypothesis.md) - [ ]
 
 ### Phase 2 - Full Benchmark
 _To be defined after M1 completion_

@@ -126,6 +126,28 @@ class ClaudeCodeWrapper:
         self.verbose = verbose
         self.session_id = None
         self.messages = []
+        self._verify_authentication()
+        
+    def _verify_authentication(self):
+        """Verify Claude Code is logged in by testing a simple query"""
+        try:
+            # Test authentication with a minimal query
+            asyncio.run(self._test_auth())
+        except Exception as e:
+            raise RuntimeError(f"Claude Code authentication failed. Please run 'claude' to log in. Error: {e}")
+    
+    async def _test_auth(self):
+        """Test authentication with minimal query"""
+        options = ClaudeCodeOptions(
+            max_turns=1,
+            permission_mode="bypassPermissions",
+            output_format="json"
+        )
+        async for message in query(prompt="test", options=options):
+            if message.get("type") == "system" and message.get("subtype") == "init":
+                if not message.get("apiKeySource"):
+                    raise RuntimeError("No API key source found")
+                break
         
     def run(self, with_message, preproc=False):
         """Mimics aider's Coder.run() interface"""
@@ -223,7 +245,7 @@ python -c "import claude_code_sdk; print('SDK installed')"
 - Python 3.10+ (SDK requirement)
 - Node.js (for Claude Code CLI)
 - Docker (for benchmark isolation)
-- ANTHROPIC_API_KEY environment variable
+- Logged-in Claude Code instance (uses existing user subscription)
 
 ## Key Risks & Mitigations
 
