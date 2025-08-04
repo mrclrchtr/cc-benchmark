@@ -1,3 +1,6 @@
 [submodule ".submodules/polyglot-benchmark"]
 	path = .submodules/polyglot-benchmark
 	url = git@github.com:Aider-AI/polyglot-benchmark.git
+[submodule ".submodules/cc-base"]
+	path = .submodules/cc-base
+	url = git@github.com:mrclrchtr/cc-base.git
