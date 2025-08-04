@@ -27,6 +27,14 @@ A personal benchmarking tool that:
 - **Code quality**: Cyclomatic complexity, line count, readability scores
 - **Failure analysis**: Categories of exercises where each tool struggles
 
+## Technical Foundation
+
+### Claude Code SDK
+- Claude Code provides official SDKs for programmatic integration (TypeScript and Python)
+- SDK enables structured output formats (JSON, streaming JSON) with well-defined message schemas
+- Built-in session management with `--continue` and `--resume` for multi-turn conversations
+- Non-interactive mode (`-p` flag) designed specifically for automation use cases
+
 ## Technical Approach
 
 ### Proven Foundation
@@ -35,9 +43,10 @@ A personal benchmarking tool that:
 - Preserve exercise format compatibility for direct comparison
 
 ### Key Adaptations
-- Replace aider CLI calls with Claude Code CLI interface
-- Parse Claude Code output format for test results
-- Handle Claude Code's interactive workflow programmatically
+- Integrate Claude Code using official Python SDK instead of raw CLI calls
+- Leverage SDK's structured message types for reliable result parsing
+- Use SDK's session management for handling test iterations
+- Benefit from SDK's error handling and type safety
 
 ## Scope Boundaries
 
