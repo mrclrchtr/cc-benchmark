@@ -322,5 +322,6 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python,macos
 
 .tmp
+tmp.benchmarks
 .idea/vcs.xml
 .idea/git_toolbox_prj.xml

@@ -9,6 +9,9 @@ import subprocess
 import sys
 import time
 import traceback
+
+# Add benchmark directory to Python path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from collections import defaultdict
 from json.decoder import JSONDecodeError
 from pathlib import Path
@@ -16,7 +19,7 @@ from types import SimpleNamespace
 from typing import List, Optional
 
 import git
-import importlib_resources
+import importlib.resources
 import lox
 import pandas as pd
 import prompts
@@ -29,6 +32,12 @@ from aider import models, sendchat
 from aider.coders import Coder, base_coder
 from aider.dump import dump  # noqa: F401
 from aider.io import InputOutput
+
+# Import Claude Code wrapper for benchmarking
+try:
+    from cc_wrapper import ClaudeCodeWrapper
+except ImportError:
+    ClaudeCodeWrapper = None
 
 BENCHMARK_DNAME = Path(os.environ.get("AIDER_BENCHMARK_DIR", "tmp.benchmarks"))
 
@@ -162,7 +171,7 @@ def resolve_dirname(dirname, use_single_prior, make_new):
 def main(
     dirnames: Optional[List[str]] = typer.Argument(None, help="Directory names"),
     graphs: bool = typer.Option(False, "--graphs", help="Generate graphs"),
-    model: str = typer.Option("gpt-3.5-turbo", "--model", "-m", help="Model name"),
+    model: str = typer.Option("sonnet", "--model", "-m", help="Model name"),
     sleep: float = typer.Option(
         0, "--sleep", help="Sleep seconds between tests when single threaded"
     ),
@@ -215,7 +224,16 @@ def main(
     exercises_dir: str = typer.Option(
         EXERCISES_DIR_DEFAULT, "--exercises-dir", help="Directory with exercise files"
     ),
+    use_claude_code: bool = typer.Option(
+        False, "--use-claude-code", help="Use Claude Code instead of aider for benchmarking"
+    ),
 ):
+    # Validate Claude Code availability
+    if use_claude_code and ClaudeCodeWrapper is None:
+        print("Error: --use-claude-code flag specified but Claude Code SDK not available.")
+        print("Please ensure claude-code-sdk is installed: pip install claude-code-sdk")
+        sys.exit(1)
+
     repo = git.Repo(search_parent_directories=True)
     commit_hash = repo.head.object.hexsha[:7]
     if repo.is_dirty():
@@ -320,7 +338,7 @@ def main(
 
     test_dnames = sorted(str(d.relative_to(original_dname)) for d in exercise_dirs)
 
-    resource_metadata = importlib_resources.files("aider.resources").joinpath("model-metadata.json")
+    resource_metadata = importlib.resources.files("aider.resources").joinpath("model-metadata.json")
     model_metadata_files_loaded = models.register_litellm_models([resource_metadata])
     dump(model_metadata_files_loaded)
 
@@ -370,6 +388,8 @@ def main(
                 sleep,
                 reasoning_effort,
                 thinking_tokens,
+                read_model_settings,
+                use_claude_code,
             )
 
             all_results.append(results)
@@ -396,6 +416,8 @@ def main(
                 sleep,
                 reasoning_effort,
                 thinking_tokens,
+                read_model_settings,
+                use_claude_code,
             )
         all_results = run_test_threaded.gather(tqdm=True)
 
@@ -694,6 +716,7 @@ def run_test_real(
     reasoning_effort: Optional[str] = None,
     thinking_tokens: Optional[int] = None,
     read_model_settings=None,
+    use_claude_code=False,
 ):
     if not os.path.isdir(testdir):
         print("Not a dir:", testdir)
@@ -819,22 +842,30 @@ def run_test_real(
     show_fnames = ",".join(map(str, fnames))
     print("fnames:", show_fnames)
 
-    coder = Coder.create(
-        main_model,
-        edit_format,
-        io,
-        fnames=fnames,
-        use_git=False,
-        stream=False,
-        verbose=verbose,
-        # auto_lint=False,  # disabled for code-in-json experiments
-        cache_prompts=True,
-        suggest_shell_commands=False,
-        ignore_mentions=ignore_files,
-    )
-    dump(coder.ignore_mentions)
-
-    coder.show_announcements()
+    # Integration point: Claude Code vs aider
+    if use_claude_code:
+        # Create Claude Code wrapper instance
+        coder = ClaudeCodeWrapper(model=model_name, verbose=verbose)
+        coder.set_cwd(testdir)
+        if verbose:
+            print(f"Using Claude Code with model: {model_name}")
+    else:
+        # Original aider Coder creation
+        coder = Coder.create(
+            main_model,
+            edit_format,
+            io,
+            fnames=fnames,
+            use_git=False,
+            stream=False,
+            verbose=verbose,
+            # auto_lint=False,  # disabled for code-in-json experiments
+            cache_prompts=True,
+            suggest_shell_commands=False,
+            ignore_mentions=ignore_files,
+        )
+        dump(coder.ignore_mentions)
+        coder.show_announcements()
     coder.get_file_mentions = lambda x: set()  # No loading of any other files
 
     timeouts = 0
