@@ -2,3 +2,6 @@
 	path = .claude
 	url = git@github.com:mrclrchtr/.claude.git
 	branch = submodule
+[submodule "polyglot-benchmark"]
+	path = polyglot-benchmark
+	url = git@github.com:Aider-AI/polyglot-benchmark.git
