@@ -28,12 +28,6 @@ _To be defined after M2 completion_
 - [BLOCKED] -> Blocked/Waiting
 - [CANCELLED] -> Cancelled
 
-## Progress Summary
-- **Total Milestones**: 2
-- **Completed**: 1 (M1 - MVP validated with 100% pass rate)
-- **In Progress**: 0
-- **Pending**: 1 (M0 - Docker environment setup)
-
 ## Notes
 - Milestones are extracted from the [Implementation Plan](IMPLEMENTATION_PLAN.md)
 - Each milestone follows the template in `.claude/templates/milestone-template.md`
