@@ -6,10 +6,11 @@ This document tracks all project milestones and their completion status.
 ## Active Milestones
 
 ### Phase 0 - Infrastructure Setup
-1. [M0_Docker_Environment_Setup.md](milestones/M0_Docker_Environment_Setup.md) - [DONE] (Docker environment with Claude Code support)
+1. [M0-Docker_Environment_Setup.md](milestones/M0-Docker_Environment_Setup.md) - [DONE] (Docker environment with Claude Code support)
+2. [M0_1-Docker_Environment_Cleanup.md](milestones/M0_1-Docker_Environment_Cleanup.md) - [ ] (Cleanup milestone)
 
 ### Phase 1 - MVP
-1. [M1_MVP_Test_the_Hypothesis.md](milestones/M1_MVP_Test_the_Hypothesis.md) - [WIP] (Integration complete, MVP validation incomplete - only 2/10 exercises tested)
+1. [M1-MVP_Test_the_Hypothesis.md](milestones/M1-MVP_Test_the_Hypothesis.md) - [WIP] (Integration complete, MVP validation incomplete - only 2/10 exercises tested)
 
 ### Phase 2 - Full Benchmark
 _To be defined after M1 completion_

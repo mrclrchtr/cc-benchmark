@@ -52,6 +52,7 @@ Key integration points:
 - **Benchmark Output**: `tmp.benchmarks/` directory organized by timestamp
 - **Prompts**: `/benchmark/prompts.py` - Minimal templates for exercise instructions
 - **Milestone Documentation**: `/docs/milestones/` - Project planning and progress tracking
+  - **Naming Convention**: `M{major}-{Short_Title}.md` (main milestones), `M{major}_{sub}-{Short_Title}.md` (sub-milestones)
 - **Development Tests**: `/dev-tests/` - Contains `simple_test.py` and `test_sdk.py` for testing Claude Code integration during development
 
 ## Documentation Reference

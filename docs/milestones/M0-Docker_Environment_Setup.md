@@ -60,7 +60,7 @@ Establish the Docker-based execution environment for running Claude Code benchma
 - None (foundational milestone)
 
 ### Downstream Impact
-- M1_MVP_Test_the_Hypothesis: Requires working Docker environment
+- M1-MVP_Test_the_Hypothesis: Requires working Docker environment
 - All future development: Docker environment is prerequisite for all benchmark execution
 
 ## Technical Specifications
