@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Claude Code Authentication Setup Script
-# This script helps set up Claude Code authentication for the Docker environment
+# Claude Code Authentication Setup Script (Simplified)
+# This script helps set up Claude Code authentication using .env file
 
 set -e
 
@@ -26,11 +26,6 @@ if ! docker image inspect cc-benchmark >/dev/null 2>&1; then
     exit 1
 fi
 
-# Create the authentication volume if it doesn't exist
-echo "📦 Creating Docker volume for authentication storage..."
-docker volume create claude-code-auth >/dev/null 2>&1 || true
-
-echo ""
 echo "🔐 Claude Code Token Setup"
 echo ""
 echo "To get your Claude Code token:"
@@ -72,22 +67,25 @@ else
 fi
 
 echo ""
-echo "💾 Storing authentication in Docker volume..."
+echo "💾 Creating .env file..."
 
-# Store the token in a dedicated file in a clean location
-# Use --entrypoint="" to bypass authentication check during setup
-docker run --rm --entrypoint="" -v claude-code-auth:/root/.cc-benchmark -e CLAUDE_TOKEN="$CLAUDE_TOKEN" cc-benchmark bash -c "
-    mkdir -p /root/.cc-benchmark
-    echo \"\$CLAUDE_TOKEN\" > /root/.cc-benchmark/token
-    chmod 600 /root/.cc-benchmark/token
-    echo 'Token stored successfully in /root/.cc-benchmark/token'
-"
+# Create .env file with the token
+cat > .env << EOF
+# Claude Code Authentication
+CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_TOKEN
+
+# Optional: Disable telemetry and enable headless mode
+CLAUDE_CODE_NO_TELEMETRY=1
+CLAUDE_CODE_HEADLESS=1
+EOF
+
+echo "✅ .env file created successfully!"
 
 echo ""
 echo "🔍 Verifying authentication setup..."
 
-# Test that the stored authentication works
-if docker run --rm -v claude-code-auth:/root/.cc-benchmark cc-benchmark echo "Authentication test successful!" >/dev/null 2>&1; then
+# Test that the .env file approach works
+if docker run --rm --env-file .env cc-benchmark echo "Authentication test successful!" >/dev/null 2>&1; then
     echo "✅ Authentication setup complete!"
 else
     echo "❌ Error: Authentication verification failed"
@@ -99,13 +97,10 @@ echo "=========================================="
 echo "🎉 Claude Code Authentication Setup Complete!"
 echo "=========================================="
 echo ""
-echo "Your Claude Code token is now stored in the Docker volume 'claude-code-auth'."
+echo "Your Claude Code token is now stored in the .env file."
 echo ""
 echo "To use the authenticated environment, run:"
 echo "  ./docker/docker.sh"
 echo ""
-echo "Or for manual container runs, use:"
-echo "  docker run --rm -v claude-code-auth:/root/.config/claude-code cc-benchmark [command]"
-echo ""
-echo "The authentication will persist across container restarts."
+echo "The .env file will be automatically loaded by Docker."
 echo ""

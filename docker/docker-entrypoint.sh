@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Docker entrypoint script for Claude Code benchmark environment
-# Validates authentication via CLAUDE_CODE_OAUTH_TOKEN environment variable
+# Simplified Docker entrypoint script for Claude Code benchmark environment
+# Uses CLAUDE_CODE_OAUTH_TOKEN directly from environment variables (--env-file)
 
 set -e
 
@@ -12,24 +12,16 @@ if ! command -v claude &> /dev/null; then
     exit 1
 fi
 
-# Load token from dedicated file if available
-if [ -f "/root/.cc-benchmark/token" ]; then
-    export CLAUDE_CODE_OAUTH_TOKEN=$(cat /root/.cc-benchmark/token)
-fi
-
 # Check if authentication token is available
 if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
-    echo "========================================"
     echo "ERROR: Claude Code not authenticated"
-    echo "========================================"
     echo ""
-    echo "To authenticate Claude Code, use the setup script:"
-    echo ""
-    echo "  # Run the authentication setup script (recommended)"
-    echo "  ./docker/setup-claude-auth.sh"
-    echo ""
-    echo "This will prompt you to paste your Claude Code token and store it"
-    echo "in the Docker volume for persistent authentication."
+    echo "To authenticate Claude Code:"
+    echo "1. Copy .env.example to .env:"
+    echo "   cp .env.example .env"
+    echo "2. Edit .env and set your token:"
+    echo "   CLAUDE_CODE_OAUTH_TOKEN=your_actual_token"
+    echo "3. Run with: ./docker/docker.sh"
     echo ""
     exit 1
 fi
@@ -37,15 +29,9 @@ fi
 # Validate that authentication is working
 echo "Validating Claude Code authentication..."
 if ! claude --print "auth test" &> /dev/null; then
-    echo "========================================"
     echo "ERROR: Claude Code authentication failed"
-    echo "========================================"
-    echo ""
-    echo "Your token may be invalid or expired. To fix this:"
-    echo ""
-    echo "  # Re-run the authentication setup script"
-    echo "  ./docker/setup-claude-auth.sh"
-    echo ""
+    echo "Your token may be invalid or expired."
+    echo "Please update your .env file with a valid token."
     exit 1
 fi
 

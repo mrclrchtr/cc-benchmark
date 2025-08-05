@@ -1,9 +1,11 @@
 # Milestone: M0 Docker Environment Setup 🐳 [B]
 
+> **Note**: Authentication approach was simplified in M0_1. This document shows the original implementation for historical context. For current usage, see the simplified `.env` file approach documented in M0_1.
+
 **Parallel Track**: Infrastructure  
 **Dependencies**: None (foundational milestone)  
 **Can Run In Parallel With**: None (blocking milestone)  
-**Status**: pending
+**Status**: DONE
 
 ## Prerequisites
 - [x] Git repository accessible and clean working directory
@@ -123,9 +125,31 @@ Establish the Docker-based execution environment for running Claude Code benchma
 - If volume mounting fails: Use bind mounts to host directory as temporary workaround
 - If SDK install fails: Use pip instead of uv as fallback package manager
 
-## Manual Verification Steps
+## Current Usage (After M0_1 Simplification)
 
-**REQUIRED**: The following steps must be completed manually to verify the Docker environment:
+The authentication approach has been simplified. Here's the current method:
+
+1. **Create .env file**:
+```bash
+cp .env.example .env
+# Edit .env and set CLAUDE_CODE_OAUTH_TOKEN=your_actual_token
+```
+
+2. **Or use the setup script**:
+```bash
+./docker/setup-claude-auth.sh
+# This creates the .env file for you
+```
+
+3. **Run Docker with .env**:
+```bash
+./docker/docker.sh
+# Automatically uses --env-file .env
+```
+
+## Original Manual Verification Steps (Historical)
+
+**Note**: These steps show the original complex approach. Use the simplified method above.
 
 1. **Build and test the Docker image**:
 ```bash

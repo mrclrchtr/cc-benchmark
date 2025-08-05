@@ -22,6 +22,9 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 
 ### Test Infrastructure
 - **Docker Environment**: Multi-language container defined in `/benchmark/Dockerfile`
+  - **Authentication** (Simplified in M0_1): Uses `.env` file with `CLAUDE_CODE_OAUTH_TOKEN`
+  - **Setup**: Run `./docker/setup-claude-auth.sh` or `cp .env.example .env` and add token
+  - **Usage**: `./docker/docker.sh` automatically loads `.env` via `--env-file`
 - **Test Commands** (mapped by file extension):
   - `.py` → `pytest`
   - `.rs` → `cargo test -- --include-ignored`

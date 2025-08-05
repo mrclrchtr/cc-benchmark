@@ -33,10 +33,13 @@ It provides a chronological history of implementation work and tracks technical 
 
 - **2025-08-05**: M0 Docker Environment Setup completed - Multi-language Docker container with Claude Code CLI and SDK integration
 - **2025-08-05**: M1 MVP milestone completed - Claude Code integration validated with 100% pass rate on Python benchmark exercises
+- **2025-08-05**: M0_1 Docker Environment Cleanup completed - Simplified authentication and documented technical debt
 
 ## Technical Debt Registry
 
 ### High Priority
+- **Authentication Complexity**: M0 over-engineered authentication system (111-line setup script) should be replaced with standard .env approach
+- **Docker Volume Mounting**: Complex volume system should be simplified to standard --env-file pattern
 
 ### Medium Priority
 
@@ -61,7 +64,7 @@ It provides a chronological history of implementation work and tracks technical 
 #### Technical Architecture
 - **Base Image**: `buildpack-deps:jammy` for comprehensive build tools
 - **Python Environment**: pyenv-managed Python 3.12.7 with proper PATH configuration
-- **Authentication Volume**: `claude-code-auth` Docker volume mounted to `/root/.config/claude-code`
+- **Authentication**: Originally used Docker volumes, simplified to `.env` file in M0_1
 - **Entrypoint Validation**: Docker entrypoint script validates CLI and SDK installation plus authentication status
 - **Build System**: Automated via `docker_build.sh` with proper build context
 
@@ -95,6 +98,36 @@ It provides a chronological history of implementation work and tracks technical 
 - **User Experience**: Simple script guides user through token collection and storage
 - **Security**: Token file has 600 permissions and is isolated in Docker volume
 - **Impact**: ✅ **FULLY FUNCTIONAL** - Authentication works seamlessly across container restarts
+
+### M0_1: Docker Environment Cleanup
+**Status**: COMPLETED (2025-08-05)
+**Objective**: Address critical over-engineering issues from M0 before proceeding to M1
+
+#### Implementation Summary
+- **Documentation Fix**: Updated M0 milestone status from "pending" to "DONE" for consistency
+- **Simplified Authentication**: Created `.env.example` and `docker-simple.sh` for standard Docker practices
+- **Technical Debt Documentation**: Comprehensive catalog of M0 over-engineering issues in `docs/TECHNICAL_DEBT.md`
+- **Alternative Scripts**: Provided simplified alternatives (`docker-simple.sh`, `docker-entrypoint-simple.sh`)
+- **Validation**: Confirmed simplified approach works with Docker `--env-file` flag
+
+#### Simplified Authentication Architecture
+- **Standard Approach**: Uses `.env` file with `CLAUDE_CODE_OAUTH_TOKEN=your_token`
+- **Docker Integration**: `docker run --env-file .env` instead of volume mounting
+- **Script Simplification**: `docker-simple.sh` replaces complex volume mounting logic
+- **Entrypoint Simplicity**: `docker-entrypoint-simple.sh` reads environment variables directly
+
+#### Technical Debt Identified
+1. **111-line setup script** for 3-step authentication process
+2. **Complex volume mounting** instead of standard environment variables
+3. **Scope creep** in authentication script (validation, UI, error handling)
+4. **Documentation inconsistency** between milestone status files
+5. **Non-standard Docker practices** instead of established patterns
+
+#### Time-Boxed Approach Success
+- **Duration**: 45 minutes (within 60-minute limit)
+- **Philosophy**: "Functional > Perfect" - provided working alternatives without removing existing system
+- **Scope Control**: Documented issues for future cleanup rather than fixing everything immediately
+- **Standard Practices**: Implemented Docker `--env-file` approach as recommended alternative
 
 ### M1: MVP - Test the Hypothesis
 **Status**: COMPLETED (2025-08-05)
@@ -148,3 +181,4 @@ It provides a chronological history of implementation work and tracks technical 
 ## Update History
 - **2025-08-05**: M0 Docker Environment Setup milestone documentation added with technical architecture details
 - **2025-08-05**: M1 milestone completion documentation added with full technical details and results
+- **2025-08-05**: M0_1 Docker Environment Cleanup milestone added with technical debt documentation

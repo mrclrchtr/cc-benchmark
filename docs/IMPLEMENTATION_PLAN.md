@@ -335,23 +335,20 @@ CMD ["bash"]
        build:
          context: .
          dockerfile: docker/Dockerfile
+       env_file:
+         - .env
        environment:
          - CLAUDE_CODE_NO_TELEMETRY=1
          - CLAUDE_CODE_HEADLESS=1
          - CLAUDE_CODE_SESSION_DIR=/benchmarks/.claude-sessions
          - CLAUDE_CODE_CONFIG_DIR=/benchmarks/.claude-config
        volumes:
-         - claude-code-auth:/root/.config/claude-code
          - ./tmp.benchmarks:/benchmarks
          - ./polyglot-benchmark:/polyglot-benchmark
          - .:/aider
        working_dir: /aider
        stdin_open: true
        tty: true
-   
-   volumes:
-     claude-code-auth:
-       external: true
    ```
 
 5. **Test Docker environment**
@@ -368,29 +365,29 @@ CMD ["bash"]
 
 ### Authentication Strategy
 
-#### Claude Code Token Authentication (Required)
-The benchmark uses Claude Code with token-based authentication via `CLAUDE_CODE_OAUTH_TOKEN` environment variable.
+#### Claude Code Token Authentication (Simplified in M0_1)
+The benchmark uses Claude Code with token-based authentication via `.env` file.
 
-1. **Persistent Token Storage**:
+1. **Simple .env Setup** (Current approach after M0_1):
    ```bash
-   # Create persistent volume for Claude Code config
-   docker volume create claude-code-auth
+   # Copy example and set your token
+   cp .env.example .env
+   # Edit .env and set CLAUDE_CODE_OAUTH_TOKEN=your_actual_token
    
-   # Mount in docker.sh
-   -v claude-code-auth:/root/.cc-benchmark \
+   # Docker loads via --env-file flag
+   docker run --env-file .env cc-benchmark
    ```
 
-2. **Initial Token Setup**:
+2. **Automated Setup Script**:
    ```bash
-   # Use the setup script (recommended)
+   # Use the setup script to create .env file
    ./docker/setup-claude-auth.sh
    ```
 
 3. **Verification**:
    ```bash
    # Verify authentication works
-   docker run --rm \
-     -v claude-code-auth:/root/.cc-benchmark \
+   docker run --rm --env-file .env \
      cc-benchmark \
      echo "Authentication test successful!"
    ```
@@ -400,14 +397,16 @@ The benchmark uses Claude Code with token-based authentication via `CLAUDE_CODE_
    # Add to docker/docker-entrypoint.sh
    if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
      echo "ERROR: Claude Code not authenticated"
-     echo "Run: ./docker/setup-claude-auth.sh"
+     echo "Create .env file: cp .env.example .env"
      exit 1
    fi
    ```
 
 5. **Troubleshooting Authentication**:
    ```bash
-   # If authentication fails, re-run setup script
+   # Check .env file exists and has token
+   cat .env
+   # Or re-run setup script to create new .env
    ./docker/setup-claude-auth.sh
    ```
 
@@ -426,22 +425,21 @@ cc-benchmark/
     └── .claude-config/          # NEW: Config storage
 ```
 
-### Docker Entrypoint Script (New)
+### Docker Entrypoint Script (Simplified in M0_1)
 ```bash
 #!/bin/bash
 # docker-entrypoint.sh
 
-# Load token from dedicated file if available
-if [ -f "/root/.cc-benchmark/token" ]; then
-    export CLAUDE_CODE_OAUTH_TOKEN=$(cat /root/.cc-benchmark/token)
-fi
+# Token is loaded from .env file via --env-file flag
+# No need to read from files
 
 # Check if authentication token is available
 if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
     echo "ERROR: Claude Code not authenticated"
     echo ""
-    echo "To authenticate, run the setup script:"
-    echo "  ./docker/setup-claude-auth.sh"
+    echo "To authenticate:"
+    echo "  cp .env.example .env"
+    echo "  # Edit .env and set your token"
     echo ""
     exit 1
 fi
@@ -450,8 +448,8 @@ fi
 if ! claude --print "auth test" &> /dev/null; then
     echo "ERROR: Claude Code authentication failed"
     echo ""
-    echo "Your token may be invalid or expired. To fix this:"
-    echo "  ./docker/setup-claude-auth.sh"
+    echo "Your token may be invalid or expired."
+    echo "Please update your .env file with a valid token."
     echo ""
     exit 1
 fi
@@ -513,14 +511,12 @@ sed -i 's/aider-benchmark/cc-benchmark/g' docker/docker_build.sh
 # Build the new image
 ./docker/docker_build.sh
 
-# Create persistent volume for authentication
-docker volume create claude-code-auth
-
-# Set up Claude Code authentication using the setup script
+# Set up Claude Code authentication (creates .env file)
 ./docker/setup-claude-auth.sh
+# Or manually: cp .env.example .env && edit .env
 
 # Verify the setup
-docker run --rm -v claude-code-auth:/root/.cc-benchmark cc-benchmark echo "Authentication test successful!"
+docker run --rm --env-file .env cc-benchmark echo "Authentication test successful!"
 ```
 
 ### Day 2: SDK Test
@@ -560,7 +556,7 @@ vim benchmark/cc_wrapper.py  # Copy code from above
 # Modify benchmark.py to add --use-claude-code flag
 # Run MVP test in Docker
 docker run -it --rm \
-  -v claude-code-auth:/root/.cc-benchmark \
+  --env-file .env \
   -v $(pwd):/aider \
   -v $(pwd)/tmp.benchmarks:/benchmarks \
   cc-benchmark \
