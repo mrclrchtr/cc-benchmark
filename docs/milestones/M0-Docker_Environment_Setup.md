@@ -82,7 +82,7 @@ Establish the Docker-based execution environment for running Claude Code benchma
 
 ### Implementation Notes
 - Authentication uses `CLAUDE_CODE_OAUTH_TOKEN` environment variable (no file-based auth)
-- Setup script `./docker/setup-claude-auth.sh` handles token collection and storage
+- Authentication setup simplified to `.env` file approach (M0_1 cleanup)
 - Docker volume `claude-code-auth` stores token in dedicated clean location
 - Docker entrypoint reads token file and sets environment variable automatically
 - Environment variables control Claude Code behavior (`CLAUDE_CODE_NO_TELEMETRY=1`, `CLAUDE_CODE_HEADLESS=1`)
@@ -118,7 +118,7 @@ Establish the Docker-based execution environment for running Claude Code benchma
 
 4. **Authentication fails with valid token**
    - Error: `Claude Code authentication failed`
-   - Solution: Token may be expired or invalid, re-run setup script: `./docker/setup-claude-auth.sh`
+   - Solution: Token may be expired or invalid, update `.env` file with new token
 
 **Fallback Strategies:**
 - If npm global install fails: Use manual binary download and PATH configuration
@@ -135,10 +135,10 @@ cp .env.example .env
 # Edit .env and set CLAUDE_CODE_OAUTH_TOKEN=your_actual_token
 ```
 
-2. **Or use the setup script**:
+2. **Simple approach** (recommended):
 ```bash
-./docker/setup-claude-auth.sh
-# This creates the .env file for you
+cp .env.example .env
+# Edit .env and add your CLAUDE_CODE_OAUTH_TOKEN
 ```
 
 3. **Run Docker with .env**:
@@ -162,15 +162,15 @@ docker volume create claude-code-auth
 
 2. **Authenticate Claude Code (Token-based)**:
 ```bash
-# Run the authentication setup script (recommended)
-./docker/setup-claude-auth.sh
+# Simple authentication setup (recommended)
+cp .env.example .env
+# Edit .env and add your CLAUDE_CODE_OAUTH_TOKEN
 ```
 
-This script will:
-- Guide you through getting your Claude Code token
-- Prompt you to paste the token
-- Store it securely in the Docker volume
-- Test that the authentication works
+This approach will:
+- Use a simple .env file for token storage
+- Keep your token secure on the host system
+- Work with Docker's standard --env-file flag
 
 3. **Verify authentication persists**:
 ```bash
@@ -212,7 +212,7 @@ fi
 # Check if authentication token is available
 if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
     echo "ERROR: Claude Code not authenticated"
-    echo "Run: ./docker/setup-claude-auth.sh"
+    echo "Create .env file: cp .env.example .env"
     exit 1
 fi
 ```
@@ -226,15 +226,15 @@ fi
 ### Key Achievements
 1. **Multi-Language Docker Environment**: Successfully built container with Python 3.12.7, Go 1.21.5, Rust, Node.js 20, Java 21
 2. **Claude Code Integration**: CLI v1.0.68 and SDK v0.0.19 installed and functional
-3. **Authentication System**: Token-based authentication with setup script `./docker/setup-claude-auth.sh`
+3. **Authentication System**: Simple token-based authentication with `.env` file (simplified in M0_1)
 4. **Clean Architecture**: Token storage in dedicated location (`/root/.cc-benchmark/token`) to avoid config pollution
 5. **Verification Completed**: Full end-to-end authentication flow tested and working
 
 ### Final Authentication Flow
-1. User runs `./docker/setup-claude-auth.sh`
-2. Script guides through token collection from Claude Code CLI
-3. Token stored securely in Docker volume with 600 permissions
-4. Container startup automatically reads token and sets `CLAUDE_CODE_OAUTH_TOKEN`
+1. User copies `.env.example` to `.env` and adds token
+2. Token stored in `.env` file on host system
+3. Container startup automatically loads token via `--env-file .env`
+4. Environment variable `CLAUDE_CODE_OAUTH_TOKEN` available to container
 5. Authentication validated with test API call before container start
 6. All containers inherit authentication seamlessly
 

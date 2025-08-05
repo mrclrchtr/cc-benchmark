@@ -4,21 +4,21 @@ This document tracks over-engineering and technical debt issues identified durin
 
 ## M0 Over-Engineering Issues
 
-### 1. Authentication System Complexity
-**Issue**: 111-line setup script for what is essentially a 3-step process
-- **Location**: `docker/setup-claude-auth.sh`
+### 1. Authentication System Complexity - RESOLVED
+**Issue**: 105-line setup script for what is essentially a 3-step process  
+- **Location**: `docker/setup-claude-auth.sh` (DELETED)
 - **Over-engineering**: Complex token validation, fancy UI, extensive error handling
-- **Simple alternative**: Standard `.env` file approach with Docker `--env-file`
-- **Impact**: High maintenance overhead, confusing for users
-- **Recommended fix**: Use simplified approach in `docker/docker-simple.sh`
+- **Solution implemented**: Standard `.env` file approach with Docker `--env-file`
+- **Impact resolved**: Eliminated maintenance overhead and user confusion
+- **Status**: COMPLETED - Single authentication method only
 
-### 2. Complex Volume Mounting
+### 2. Complex Volume Mounting - RESOLVED
 **Issue**: Custom Docker volume system instead of standard environment variables
-- **Location**: `docker/docker.sh` (volume mounting), `docker/docker-entrypoint.sh` (token file reading)
-- **Over-engineering**: Persistent token storage in Docker volumes when env vars are simpler
-- **Simple alternative**: Direct environment variable injection via `--env-file`
-- **Impact**: Additional complexity in Docker setup and debugging
-- **Recommended fix**: Use `--env-file .env` instead of volume mounting
+- **Location**: All Docker scripts now use `--env-file` only
+- **Over-engineering**: Was using persistent token storage in Docker volumes when env vars are simpler
+- **Solution implemented**: Direct environment variable injection via `--env-file`
+- **Impact resolved**: Eliminated Docker setup and debugging complexity
+- **Status**: COMPLETED - Volume mounting completely removed
 
 ### 3. Scope Creep in Setup Script
 **Issue**: Authentication script does more than authentication
@@ -50,18 +50,17 @@ This document tracks over-engineering and technical debt issues identified durin
 
 ## Resolution Strategy
 
-### Immediate (M0_1 - Completed)
+### Completed (M0_1 - Final)
 - [x] Create simplified `.env` approach
 - [x] Document technical debt issues
-- [x] Fix documentation inconsistency
-- [x] **ACTUALLY FIXED**: Replaced complex Docker scripts with simplified versions
-- [x] **ACTUALLY FIXED**: Removed volume-based authentication, now uses `--env-file`
-- [x] **ACTUALLY FIXED**: Simplified Docker entrypoint from 65 lines to 51 lines
+- [x] Fix documentation inconsistency  
+- [x] **ACTUALLY COMPLETED**: Removed `setup-claude-auth.sh` script entirely (105 lines → 0 lines)
+- [x] **ACTUALLY COMPLETED**: Authentication uses only `--env-file` approach (no volume mounting)
+- [x] **ACTUALLY COMPLETED**: Single authentication method in all documentation
 
 ### Future Cleanup (Post-M1)
-- [ ] Replace complex setup script with simple instructions (setup-claude-auth.sh still exists)
-- [ ] Update documentation to reference new simplified approach
-- [ ] Consider removing old setup-claude-auth.sh script entirely
+- [ ] Update remaining documentation references to old volume-based approach
+- [ ] Clean up historical references in IMPLEMENTATION_PLAN.md and IMPLEMENTATION_LOG.md
 
 ## Resolved Issues
 

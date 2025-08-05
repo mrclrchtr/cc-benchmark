@@ -92,12 +92,12 @@ It provides a chronological history of implementation work and tracks technical 
 - **Root Cause**: Claude Code CLI requires interactive TTY with raw mode support, which is not available in containerized environments
 - **Technical Details**: The CLI uses Ink.js library which requires `process.stdin` raw mode for interactive UI
 
-**Final Solution**: Token-based authentication with setup script
-- **Implementation**: Created `./docker/setup-claude-auth.sh` script for guided token setup
-- **Architecture**: Store token in `/root/.cc-benchmark/token` file in Docker volume
-- **Authentication Flow**: Docker entrypoint reads token file and sets `CLAUDE_CODE_OAUTH_TOKEN` environment variable
-- **User Experience**: Simple script guides user through token collection and storage
-- **Security**: Token file has 600 permissions and is isolated in Docker volume
+**Final Solution**: Token-based authentication with .env file (simplified in M0_1)
+- **Implementation**: Simple `.env` file approach for token setup
+- **Architecture**: Store token in `.env` file on host system
+- **Authentication Flow**: Docker loads environment variables via `--env-file .env`
+- **User Experience**: Copy template and edit: `cp .env.example .env`
+- **Security**: Token stored locally, not in container or volumes
 - **Impact**: ✅ **FULLY FUNCTIONAL** - Authentication works seamlessly across container restarts
 
 ### M0_1: Docker Environment Cleanup

@@ -290,22 +290,18 @@ CMD ["bash"]
 
 #### 4. New Docker Security Considerations
 - **Authentication**: Claude Code uses `CLAUDE_CODE_OAUTH_TOKEN` environment variable
-  - Uses Docker volume `claude-code-auth` for persistent token storage
-  - Token stored in `/root/.cc-benchmark/token` file with 600 permissions
-  - One-time token setup required per Docker host using `./docker/setup-claude-auth.sh` script
+  - Uses `.env` file for simple token storage
+  - One-time setup: `cp .env.example .env` and add token
   - No interactive authentication needed - token-based approach only
-  - Docker entrypoint automatically reads token file and sets environment variable
-  - Authentication persists across container restarts via Docker volume
+  - Docker automatically loads environment variables via `--env-file .env`
 - **Network Access**: Claude Code requires internet access for subscription validation
 - **File System**: 
-  - Persistent volume for authentication (`claude-code-auth`)
   - Writable benchmark directory for Claude Code sessions
   - Session data persists in `/benchmarks/.claude-sessions`
 - **Security Best Practices**:
   - CLAUDE_CODE_OAUTH_TOKEN contains sensitive authentication token
-  - Docker volume isolates credentials from host system
-  - Volume can be inspected/backed up if needed
-  - Clean removal: `docker volume rm claude-code-auth`
+  - `.env` file should be added to `.gitignore` to prevent token exposure
+  - Token stored only locally, not in container or volumes
 
 ### Implementation Phases
 
@@ -378,10 +374,11 @@ The benchmark uses Claude Code with token-based authentication via `.env` file.
    docker run --env-file .env cc-benchmark
    ```
 
-2. **Automated Setup Script**:
+2. **Simple Setup**:
    ```bash
-   # Use the setup script to create .env file
-   ./docker/setup-claude-auth.sh
+   # Copy template and add your token
+   cp .env.example .env
+   # Edit .env and add your CLAUDE_CODE_OAUTH_TOKEN
    ```
 
 3. **Verification**:
@@ -406,8 +403,8 @@ The benchmark uses Claude Code with token-based authentication via `.env` file.
    ```bash
    # Check .env file exists and has token
    cat .env
-   # Or re-run setup script to create new .env
-   ./docker/setup-claude-auth.sh
+   # Or recreate .env from template
+   cp .env.example .env
    ```
 
 ### File Structure for Docker Support
@@ -419,7 +416,7 @@ cc-benchmark/
 │   ├── docker_build.sh          # MODIFY: Update image name
 │   ├── docker-compose.yml       # NEW: Optional compose file
 │   ├── docker-entrypoint.sh     # NEW: Handle token auth validation
-│   └── setup-claude-auth.sh     # NEW: Token setup script
+│   └── docker-entrypoint.sh     # Authentication validation
 └── tmp.benchmarks/
     ├── .claude-sessions/        # NEW: Session storage
     └── .claude-config/          # NEW: Config storage
@@ -512,8 +509,8 @@ sed -i 's/aider-benchmark/cc-benchmark/g' docker/docker_build.sh
 ./docker/docker_build.sh
 
 # Set up Claude Code authentication (creates .env file)
-./docker/setup-claude-auth.sh
-# Or manually: cp .env.example .env && edit .env
+cp .env.example .env
+# Edit .env and add your CLAUDE_CODE_OAUTH_TOKEN
 
 # Verify the setup
 docker run --rm --env-file .env cc-benchmark echo "Authentication test successful!"

@@ -4,6 +4,7 @@
 
 | Model             | Anthropic API                                             |
 |-------------------|-----------------------------------------------------------|
+| Claude Opus 4.1   | `claude-opus-4-1-20250805`                                |
 | Claude Opus 4     | `claude-opus-4-20250514`                                  |
 | Claude Sonnet 4   | `claude-sonnet-4-20250514`                                |
 | Claude Sonnet 3.7 | `claude-3-7-sonnet-20250219` (`claude-3-7-sonnet-latest`) |
@@ -19,6 +20,7 @@
 
 | Model             | Alias                      | Model ID                     |
 |-------------------|----------------------------|------------------------------|
+| Claude Opus 4.1   | `claude-opus-4-1`          | `claude-opus-4-1-20250805`   |
 | Claude Opus 4     | `claude-opus-4-0`          | `claude-opus-4-20250514`     |
 | Claude Sonnet 4   | `claude-sonnet-4-0`        | `claude-sonnet-4-20250514`   |
 | Claude Sonnet 3.7 | `claude-3-7-sonnet-latest` | `claude-3-7-sonnet-20250219` |
