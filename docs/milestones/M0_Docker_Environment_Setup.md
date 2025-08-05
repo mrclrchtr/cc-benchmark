@@ -6,26 +6,26 @@
 **Status**: pending
 
 ## Prerequisites
-- [ ] Git repository accessible and clean working directory
-- [ ] Docker installed and running on host system
-- [ ] Claude.ai subscription account for authentication
-- [ ] Internet connectivity for package downloads and authentication
+- [x] Git repository accessible and clean working directory
+- [x] Docker installed and running on host system
+- [x] Claude.ai subscription account for authentication
+- [x] Internet connectivity for package downloads and authentication
 
 ## Overview
 Establish the Docker-based execution environment for running Claude Code benchmarks. This milestone adapts the existing aider benchmark Docker infrastructure to support Claude Code CLI and SDK, including secure authentication handling and environment isolation.
 
 ## Objectives
-- [ ] Modify Docker configuration to include Claude Code CLI and Python SDK
-- [ ] Implement secure authentication handling via persistent Docker volumes
-- [ ] Create automated setup scripts and validation procedures
-- [ ] Document Docker environment usage and troubleshooting
+- [x] Modify Docker configuration to include Claude Code CLI and Python SDK
+- [x] Implement secure authentication handling via persistent Docker volumes
+- [x] Create automated setup scripts and validation procedures
+- [x] Document Docker environment usage and troubleshooting
 
 ## Deliverables
-- [ ] Updated Dockerfile with Claude Code dependencies
-- [ ] Modified docker.sh with Claude Code environment variables
-- [ ] New docker-entrypoint.sh for authentication validation
-- [ ] Updated docker_build.sh with new image naming
-- [ ] Optional docker-compose.yml for streamlined management
+- [x] Updated docker/Dockerfile with Claude Code dependencies
+- [x] Modified docker/docker.sh with Claude Code environment variables
+- [x] New docker/docker-entrypoint.sh for authentication validation
+- [x] Updated docker/docker_build.sh with new image naming
+- [x] **MANUAL VERIFICATION REQUIRED**: Test Claude Code authentication flow in Docker container
 
 ## Success Criteria
 - **Automated tests**: Docker image builds successfully with Claude Code CLI and SDK installed
@@ -65,22 +65,26 @@ Establish the Docker-based execution environment for running Claude Code benchma
 
 ## Technical Specifications
 ### Architecture Decisions
-- Use Docker volumes for persistent Claude Code authentication storage
+- Use environment variable `CLAUDE_CODE_OAUTH_TOKEN` for authentication (no file-based auth)
+- Store authentication token in Docker volume as dedicated token file
 - Extend existing aider Dockerfile rather than creating new one
-- Force Claude.ai subscription login method to ensure proper authentication
 - Use environment variables for Claude Code configuration
+- Clean separation: token storage in `/root/.cc-benchmark/` to avoid polluting Claude Code config
 
 ### Integration Points
-- Claude Code CLI: Global npm installation in Docker container
-- Claude Code SDK: Python package installation via uv
-- Authentication: Persistent volume mounting for ~/.config/claude-code/
-- Session management: Writable directories for Claude Code sessions
+- Claude Code CLI: Global npm installation in Docker container (v1.0.68)
+- Claude Code SDK: Python package installation via uv (v0.0.19)
+- Authentication: `CLAUDE_CODE_OAUTH_TOKEN` environment variable set at container startup
+- Token Storage: Docker volume `claude-code-auth` mounted to `/root/.cc-benchmark/`
+- Token File: `/root/.cc-benchmark/token` with 600 permissions
 
 ### Implementation Notes
-- Authentication requires one-time interactive login setup
-- Docker volume `claude-code-auth` stores authentication tokens securely
-- Environment variables control Claude Code behavior (telemetry, headless mode)
-- Entry point script validates authentication before allowing container usage
+- Authentication uses `CLAUDE_CODE_OAUTH_TOKEN` environment variable (no file-based auth)
+- Setup script `./docker/setup-claude-auth.sh` handles token collection and storage
+- Docker volume `claude-code-auth` stores token in dedicated clean location
+- Docker entrypoint reads token file and sets environment variable automatically
+- Environment variables control Claude Code behavior (`CLAUDE_CODE_NO_TELEMETRY=1`, `CLAUDE_CODE_HEADLESS=1`)
+- Entry point script validates token authentication before allowing container usage
 
 ## Testing Requirements
 - **Unit Tests**: N/A (infrastructure milestone)
@@ -90,11 +94,11 @@ Establish the Docker-based execution environment for running Claude Code benchma
 - **Security Tests**: Authentication tokens properly isolated in Docker volume
 
 ## Documentation Requirements
-- [ ] Code documentation (inline comments in Docker scripts)
+- [x] Code documentation (inline comments in Docker scripts)
 - [ ] API documentation (N/A)
-- [ ] Architecture decision records (Docker approach rationale)
-- [ ] User-facing documentation (Docker setup instructions)
-- [ ] Runbook/operational guide (Authentication troubleshooting)
+- [x] Architecture decision records (Docker approach rationale)
+- [x] User-facing documentation (Docker setup instructions)
+- [x] Runbook/operational guide (Authentication troubleshooting)
 
 ## Troubleshooting
 **Common Issues and Solutions:**
@@ -102,43 +106,64 @@ Establish the Docker-based execution environment for running Claude Code benchma
    - Error: `claude: command not found`
    - Solution: Verify npm install completed successfully, check PATH includes npm global bin directory
    
-2. **Authentication file not persisting**
-   - Error: `auth.json not found` on container restart
+2. **Authentication token not persisting**
+   - Error: `CLAUDE_CODE_OAUTH_TOKEN not set` on container restart
    - Solution: Ensure Docker volume is properly created and mounted: `docker volume create claude-code-auth`
    
 3. **SDK import fails**
    - Error: `ModuleNotFoundError: No module named 'claude_code_sdk'`
    - Solution: Verify uv pip install completed, check Python path and virtual environment
 
-4. **Authentication fails with valid login**
-   - Error: `Claude Code authentication is invalid`
-   - Solution: Remove old auth and re-login: `rm -rf /root/.config/claude-code/auth.json` then `claude --forceLoginMethod=claudeai`
+4. **Authentication fails with valid token**
+   - Error: `Claude Code authentication failed`
+   - Solution: Token may be expired or invalid, re-run setup script: `./docker/setup-claude-auth.sh`
 
 **Fallback Strategies:**
 - If npm global install fails: Use manual binary download and PATH configuration
 - If volume mounting fails: Use bind mounts to host directory as temporary workaround
 - If SDK install fails: Use pip instead of uv as fallback package manager
 
-## Implementation Examples
+## Manual Verification Steps
+
+**REQUIRED**: The following steps must be completed manually to verify the Docker environment:
+
+1. **Build and test the Docker image**:
 ```bash
 # Build the new Docker image
-./benchmark/docker_build.sh
+./docker/docker_build.sh
 
 # Create persistent authentication volume
 docker volume create claude-code-auth
-
-# One-time authentication setup
-docker run -it --rm \
-  -v claude-code-auth:/root/.config/claude-code \
-  cc-benchmark \
-  claude --forceLoginMethod=claudeai
-
-# Verify installation and authentication
-docker run --rm \
-  -v claude-code-auth:/root/.config/claude-code \
-  cc-benchmark \
-  bash -c "claude --version && python -c 'import claude_code_sdk; print(\"SDK OK\")' && claude status"
 ```
+
+2. **Authenticate Claude Code (Token-based)**:
+```bash
+# Run the authentication setup script (recommended)
+./docker/setup-claude-auth.sh
+```
+
+This script will:
+- Guide you through getting your Claude Code token
+- Prompt you to paste the token
+- Store it securely in the Docker volume
+- Test that the authentication works
+
+3. **Verify authentication persists**:
+```bash
+# Test that authentication works after container restart
+docker run --rm \
+  -v claude-code-auth:/root/.cc-benchmark \
+  cc-benchmark \
+  echo "Authentication test successful!"
+```
+
+The container will automatically:
+- Read the token from `/root/.cc-benchmark/token`
+- Set the `CLAUDE_CODE_OAUTH_TOKEN` environment variable
+- Validate the token by making a test API call
+- Display success messages and start normally if authentication is working
+
+## Implementation Examples
 
 ```dockerfile
 # Key Dockerfile additions
@@ -148,23 +173,57 @@ RUN uv pip install --system --no-cache-dir claude-code-sdk
 ENV CLAUDE_CODE_NO_TELEMETRY=1
 ENV CLAUDE_CODE_HEADLESS=1
 
-COPY benchmark/docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
 ```
 
 ```bash
 # docker-entrypoint.sh authentication check
-if [ ! -f "/root/.config/claude-code/auth.json" ]; then
+# Load token from dedicated file if available
+if [ -f "/root/.cc-benchmark/token" ]; then
+    export CLAUDE_CODE_OAUTH_TOKEN=$(cat /root/.cc-benchmark/token)
+fi
+
+# Check if authentication token is available
+if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
     echo "ERROR: Claude Code not authenticated"
-    echo "Run: docker run -it -v claude-code-auth:/root/.config/claude-code cc-benchmark claude --forceLoginMethod=claudeai"
+    echo "Run: ./docker/setup-claude-auth.sh"
     exit 1
 fi
 ```
+
+## Completion Summary
+
+### ✅ Final Implementation Status
+**Status**: COMPLETED (2025-08-05)
+**Total Duration**: ~4 hours (including authentication troubleshooting)
+
+### Key Achievements
+1. **Multi-Language Docker Environment**: Successfully built container with Python 3.12.7, Go 1.21.5, Rust, Node.js 20, Java 21
+2. **Claude Code Integration**: CLI v1.0.68 and SDK v0.0.19 installed and functional
+3. **Authentication System**: Token-based authentication with setup script `./docker/setup-claude-auth.sh`
+4. **Clean Architecture**: Token storage in dedicated location (`/root/.cc-benchmark/token`) to avoid config pollution
+5. **Verification Completed**: Full end-to-end authentication flow tested and working
+
+### Final Authentication Flow
+1. User runs `./docker/setup-claude-auth.sh`
+2. Script guides through token collection from Claude Code CLI
+3. Token stored securely in Docker volume with 600 permissions
+4. Container startup automatically reads token and sets `CLAUDE_CODE_OAUTH_TOKEN`
+5. Authentication validated with test API call before container start
+6. All containers inherit authentication seamlessly
+
+### Ready for Next Phase
+- ✅ Docker environment fully functional
+- ✅ Authentication working across container restarts  
+- ✅ All language runtimes available
+- ✅ Claude Code CLI and SDK operational
+- ✅ Ready for M1 MVP or Phase 2 development
 
 ## Notes
 - **Token Budget**: lightweight <3K (infrastructure setup, minimal new code)
 - **Integration Multipliers Applied**: 1.5x Docker complexity multiplier
 - **Parallel Execution Notes**: This is a blocking milestone - no other development work can proceed until Docker environment is established
-- **Authentication Security**: auth.json contains sensitive tokens, properly isolated in Docker volume
+- **Authentication Security**: CLAUDE_CODE_OAUTH_TOKEN contains sensitive token, properly isolated in Docker volume
 - **One-time Setup**: Authentication is required once per Docker host, persists across container restarts

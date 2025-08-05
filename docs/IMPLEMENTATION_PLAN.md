@@ -20,7 +20,7 @@
     - `run_unit_tests()` - Language-specific test runner (pytest, cargo test, go test, etc.)
 - **Test Configuration**:
   - `/benchmark/prompts.py` - Minimal prompt templates for exercise instructions and test failures
-  - `/benchmark/Dockerfile` - Multi-language environment (Python 3.11, Go 1.21.5, Rust, Node.js 20, Java 21)
+  - `/docker/Dockerfile` - Multi-language environment (Python 3.11, Go 1.21.5, Rust, Node.js 20, Java 21)
   - Test commands mapped by file extension (.py → pytest, .rs → cargo test, etc.)
 - **Data Management**:
   - Results stored as JSON in `.aider.results.json` per test
@@ -62,7 +62,8 @@ cc-benchmark/
 ├── benchmark/                    # EXISTING: Aider benchmark
 │   ├── benchmark.py             # MODIFY: Add Claude Code support
 │   ├── cc_wrapper.py            # NEW: Claude Code CLI wrapper (only new file!)
-│   ├── prompts.py               # EXISTING: Works as-is
+│   └── prompts.py               # EXISTING: Works as-is
+├── docker/                       # EXISTING: Docker configuration
 │   └── Dockerfile               # EXISTING: Works as-is
 └── tmp.benchmarks/              # EXISTING: Results directory
 ```
@@ -75,10 +76,10 @@ That's it. One new file, one modified file.
 **Duration: 3-4 hours**
 
 1. **Update Docker Configuration (2 hours)**
-   - Modify `benchmark/Dockerfile` to include Claude Code CLI and SDK
-   - Update `docker.sh` with Claude Code environment variables
-   - Change image name in `docker_build.sh` to `cc-benchmark`
-   - Create `docker-entrypoint.sh` for authentication handling
+   - Modify `docker/Dockerfile` to include Claude Code CLI and SDK
+   - Update `docker/docker.sh` with Claude Code environment variables
+   - Change image name in `docker/docker_build.sh` to `cc-benchmark`
+   - Create `docker/docker-entrypoint.sh` for authentication handling
 
 2. **Build and Test Docker Image (1 hour)**
    - Build the new Docker image
@@ -252,7 +253,7 @@ The benchmark framework uses Docker for secure, isolated test execution. The cur
 
 ### Required Docker Changes
 
-#### 1. Dockerfile Modifications (`benchmark/Dockerfile`)
+#### 1. Dockerfile Modifications (`docker/Dockerfile`)
 ```dockerfile
 # Add to existing Dockerfile after line 43 (Node.js installation)
 # Install Claude Code CLI globally
@@ -267,33 +268,33 @@ ENV CLAUDE_CODE_NO_TELEMETRY=1
 ENV CLAUDE_CODE_HEADLESS=1
 
 # Copy and set entrypoint script
-COPY benchmark/docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["bash"]
 ```
 
-#### 2. Docker Run Script (`benchmark/docker.sh`)
+#### 2. Docker Run Script (`docker/docker.sh`)
 ```bash
 # Add Claude Code specific mounts and environment
--v claude-code-auth:/root/.config/claude-code \
+-v claude-code-auth:/root/.cc-benchmark \
 -e CLAUDE_CODE_SESSION_DIR=/benchmarks/.claude-sessions \
 -e CLAUDE_CODE_CONFIG_DIR=/benchmarks/.claude-config \
 -e CLAUDE_CODE_NO_TELEMETRY=1 \
 -e CLAUDE_CODE_HEADLESS=1 \
 ```
 
-#### 3. Build Script Updates (`benchmark/docker_build.sh`)
+#### 3. Build Script Updates (`docker/docker_build.sh`)
 - Update image tag from `aider-benchmark` to `cc-benchmark`
 - Add build args for optional API key injection
 
 #### 4. New Docker Security Considerations
-- **Authentication**: Claude Code requires Claude.ai subscription login
-  - Uses Docker volume `claude-code-auth` for persistent authentication
-  - Authentication stored in `/root/.config/claude-code/auth.json`
-  - One-time interactive login required per Docker host
-  - Login enforced with `--forceLoginMethod=claudeai` to ensure Claude.ai subscription
-  - No API keys in environment variables or code
+- **Authentication**: Claude Code uses `CLAUDE_CODE_OAUTH_TOKEN` environment variable
+  - Uses Docker volume `claude-code-auth` for persistent token storage
+  - Token stored in `/root/.cc-benchmark/token` file with 600 permissions
+  - One-time token setup required per Docker host using `./docker/setup-claude-auth.sh` script
+  - No interactive authentication needed - token-based approach only
+  - Docker entrypoint automatically reads token file and sets environment variable
   - Authentication persists across container restarts via Docker volume
 - **Network Access**: Claude Code requires internet access for subscription validation
 - **File System**: 
@@ -301,7 +302,7 @@ CMD ["bash"]
   - Writable benchmark directory for Claude Code sessions
   - Session data persists in `/benchmarks/.claude-sessions`
 - **Security Best Practices**:
-  - auth.json contains sensitive authentication tokens
+  - CLAUDE_CODE_OAUTH_TOKEN contains sensitive authentication token
   - Docker volume isolates credentials from host system
   - Volume can be inspected/backed up if needed
   - Clean removal: `docker volume rm claude-code-auth`
@@ -333,7 +334,7 @@ CMD ["bash"]
      cc-benchmark:
        build:
          context: .
-         dockerfile: benchmark/Dockerfile
+         dockerfile: docker/Dockerfile
        environment:
          - CLAUDE_CODE_NO_TELEMETRY=1
          - CLAUDE_CODE_HEADLESS=1
@@ -356,7 +357,7 @@ CMD ["bash"]
 5. **Test Docker environment**
    ```bash
    # Build new image
-   ./benchmark/docker_build.sh
+   ./docker/docker_build.sh
    
    # Test Claude Code CLI in container
    docker run --rm cc-benchmark claude --version
@@ -367,85 +368,59 @@ CMD ["bash"]
 
 ### Authentication Strategy
 
-#### Claude Code Subscription Login (Required)
-The benchmark requires using Claude Code with a valid Claude.ai subscription login. Authentication is stored in `~/.config/claude-code/auth.json`.
+#### Claude Code Token Authentication (Required)
+The benchmark uses Claude Code with token-based authentication via `CLAUDE_CODE_OAUTH_TOKEN` environment variable.
 
-1. **Persistent Login Storage**:
+1. **Persistent Token Storage**:
    ```bash
    # Create persistent volume for Claude Code config
    docker volume create claude-code-auth
    
-   # Mount in docker.sh - specific to auth.json location
-   -v claude-code-auth:/root/.config/claude-code \
+   # Mount in docker.sh
+   -v claude-code-auth:/root/.cc-benchmark \
    ```
 
-2. **Initial Login Setup**:
+2. **Initial Token Setup**:
    ```bash
-   # One-time interactive login (force Claude.ai subscription login)
-   docker run -it --rm \
-     -v claude-code-auth:/root/.config/claude-code \
-     cc-benchmark \
-     claude --forceLoginMethod=claudeai
-   
-   # Note: Use --forceLoginMethod=claudeai to ensure Claude.ai subscription login
-   # (not Anthropic Console API billing accounts)
+   # Use the setup script (recommended)
+   ./docker/setup-claude-auth.sh
    ```
 
 3. **Verification**:
    ```bash
-   # Verify login persists by checking auth.json
+   # Verify authentication works
    docker run --rm \
-     -v claude-code-auth:/root/.config/claude-code \
+     -v claude-code-auth:/root/.cc-benchmark \
      cc-benchmark \
-     bash -c "test -f /root/.config/claude-code/auth.json && echo 'Auth found' || echo 'No auth'"
-   
-   # Verify Claude Code status
-   docker run --rm \
-     -v claude-code-auth:/root/.config/claude-code \
-     cc-benchmark \
-     claude status
+     echo "Authentication test successful!"
    ```
 
-4. **Automated Login Check**:
+4. **Automated Token Check**:
    ```bash
-   # Add to docker-entrypoint.sh
-   if [ ! -f "/root/.config/claude-code/auth.json" ]; then
-     echo "ERROR: Claude Code not authenticated (auth.json not found)"
-     echo "Run: docker run -it -v claude-code-auth:/root/.config/claude-code cc-benchmark claude --forceLoginMethod=claudeai"
-     exit 1
-   fi
-   
-   if ! claude status &>/dev/null; then
-     echo "ERROR: Claude Code authentication invalid"
-     echo "Run: docker run -it -v claude-code-auth:/root/.config/claude-code cc-benchmark claude --forceLoginMethod=claudeai"
+   # Add to docker/docker-entrypoint.sh
+   if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+     echo "ERROR: Claude Code not authenticated"
+     echo "Run: ./docker/setup-claude-auth.sh"
      exit 1
    fi
    ```
 
 5. **Troubleshooting Authentication**:
    ```bash
-   # If authentication fails, clean and retry
-   docker run --rm \
-     -v claude-code-auth:/root/.config/claude-code \
-     cc-benchmark \
-     rm -rf /root/.config/claude-code/auth.json
-   
-   # Then login again
-   docker run -it --rm \
-     -v claude-code-auth:/root/.config/claude-code \
-     cc-benchmark \
-     claude --forceLoginMethod=claudeai
+   # If authentication fails, re-run setup script
+   ./docker/setup-claude-auth.sh
    ```
 
 ### File Structure for Docker Support
 ```
 cc-benchmark/
-├── benchmark/
+├── docker/
 │   ├── Dockerfile                # MODIFY: Add Claude Code
 │   ├── docker.sh                # MODIFY: Update environment
 │   ├── docker_build.sh          # MODIFY: Update image name
 │   ├── docker-compose.yml       # NEW: Optional compose file
-│   └── docker-entrypoint.sh     # NEW: Handle auth setup
+│   ├── docker-entrypoint.sh     # NEW: Handle token auth validation
+│   └── setup-claude-auth.sh     # NEW: Token setup script
 └── tmp.benchmarks/
     ├── .claude-sessions/        # NEW: Session storage
     └── .claude-config/          # NEW: Config storage
@@ -456,37 +431,32 @@ cc-benchmark/
 #!/bin/bash
 # docker-entrypoint.sh
 
-# Check if auth.json exists
-if [ ! -f "/root/.config/claude-code/auth.json" ]; then
-    echo "ERROR: Claude Code not authenticated (auth.json not found)"
-    echo ""
-    echo "To login with your Claude.ai subscription, run:"
-    echo "  docker run -it -v claude-code-auth:/root/.config/claude-code cc-benchmark claude --forceLoginMethod=claudeai"
-    echo ""
-    echo "This will save your login for future benchmark runs."
-    exit 1
+# Load token from dedicated file if available
+if [ -f "/root/.cc-benchmark/token" ]; then
+    export CLAUDE_CODE_OAUTH_TOKEN=$(cat /root/.cc-benchmark/token)
 fi
 
-# Verify Claude Code status
-if ! claude status &>/dev/null; then
-    echo "ERROR: Claude Code authentication is invalid!"
+# Check if authentication token is available
+if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+    echo "ERROR: Claude Code not authenticated"
     echo ""
-    echo "Your auth.json exists but authentication failed. To fix this:"
-    echo "  1. Remove old auth: docker run --rm -v claude-code-auth:/root/.config/claude-code cc-benchmark rm -rf /root/.config/claude-code/auth.json"
-    echo "  2. Login again: docker run -it -v claude-code-auth:/root/.config/claude-code cc-benchmark claude --forceLoginMethod=claudeai"
+    echo "To authenticate, run the setup script:"
+    echo "  ./docker/setup-claude-auth.sh"
     echo ""
     exit 1
 fi
 
-# Initialize Claude Code directories if needed
-if [ ! -d "$CLAUDE_CODE_SESSION_DIR" ]; then
-    mkdir -p "$CLAUDE_CODE_SESSION_DIR"
-fi
-if [ ! -d "$CLAUDE_CODE_CONFIG_DIR" ]; then
-    mkdir -p "$CLAUDE_CODE_CONFIG_DIR"
+# Validate that authentication is working
+if ! claude --print "auth test" &> /dev/null; then
+    echo "ERROR: Claude Code authentication failed"
+    echo ""
+    echo "Your token may be invalid or expired. To fix this:"
+    echo "  ./docker/setup-claude-auth.sh"
+    echo ""
+    exit 1
 fi
 
-echo "Claude Code authenticated successfully (auth.json found and valid)"
+echo "Claude Code authenticated successfully (token validated)"
 
 # Execute command
 exec "$@"
@@ -531,29 +501,26 @@ cd cc-benchmark
 git checkout -b docker-claude-code-integration
 
 # Modify Dockerfile to add Claude Code
-vim benchmark/Dockerfile
+vim docker/Dockerfile
 # Add after line 43:
 # RUN npm install -g @anthropic-ai/claude-code@latest
 # Add after line 62:
 # RUN uv pip install --system --no-cache-dir claude-code-sdk
 
 # Update docker_build.sh
-sed -i 's/aider-benchmark/cc-benchmark/g' benchmark/docker_build.sh
+sed -i 's/aider-benchmark/cc-benchmark/g' docker/docker_build.sh
 
 # Build the new image
-./benchmark/docker_build.sh
+./docker/docker_build.sh
 
 # Create persistent volume for authentication
 docker volume create claude-code-auth
 
-# Login to Claude Code with Claude.ai subscription (one-time setup)
-docker run -it --rm -v claude-code-auth:/root/.config/claude-code cc-benchmark claude --forceLoginMethod=claudeai
-
-# Verify auth.json was created
-docker run --rm -v claude-code-auth:/root/.config/claude-code cc-benchmark ls -la /root/.config/claude-code/auth.json
+# Set up Claude Code authentication using the setup script
+./docker/setup-claude-auth.sh
 
 # Verify the setup
-docker run --rm -v claude-code-auth:/root/.config/claude-code cc-benchmark claude status
+docker run --rm -v claude-code-auth:/root/.cc-benchmark cc-benchmark echo "Authentication test successful!"
 ```
 
 ### Day 2: SDK Test
@@ -593,7 +560,7 @@ vim benchmark/cc_wrapper.py  # Copy code from above
 # Modify benchmark.py to add --use-claude-code flag
 # Run MVP test in Docker
 docker run -it --rm \
-  -v claude-code-auth:/root/.config/claude-code \
+  -v claude-code-auth:/root/.cc-benchmark \
   -v $(pwd):/aider \
   -v $(pwd)/tmp.benchmarks:/benchmarks \
   cc-benchmark \
@@ -612,10 +579,10 @@ python benchmark.py all-exercises --use-claude-code
 ## Success Criteria
 
 ### Docker Setup (Day 1)
-- [ ] Docker image builds successfully with Claude Code CLI and SDK
-- [ ] Authentication works via environment variable
-- [ ] Claude Code can be invoked inside container
-- [ ] Test execution environment is properly isolated
+- [x] Docker image builds successfully with Claude Code CLI and SDK
+- [x] Authentication works via environment variable
+- [x] Claude Code can be invoked inside container
+- [x] Test execution environment is properly isolated
 
 ### MVP (Day 3)
 - [ ] Claude Code SDK integrated successfully

@@ -31,6 +31,7 @@ It provides a chronological history of implementation work and tracks technical 
 ## Implementation Timeline
 [Chronological record of changes]
 
+- **2025-08-05**: M0 Docker Environment Setup completed - Multi-language Docker container with Claude Code CLI and SDK integration
 - **2025-08-05**: M1 MVP milestone completed - Claude Code integration validated with 100% pass rate on Python benchmark exercises
 
 ## Technical Debt Registry
@@ -45,6 +46,55 @@ It provides a chronological history of implementation work and tracks technical 
 - **Performance Monitoring**: Track actual API performance metrics instead of stub implementations
 
 ## Implementation Details by Milestone
+
+### M0: Docker Environment Setup
+**Status**: COMPLETED (2025-08-05)
+**Objective**: Establish Docker-based execution environment for running Claude Code benchmarks
+
+#### Implementation Summary
+- **Multi-Language Docker Container**: Built on `buildpack-deps:jammy` with support for Python 3.12, Go 1.21.5, Rust, Node.js 20, and Java 21
+- **Claude Code CLI Integration**: Global npm installation of `@anthropic-ai/claude-code@latest` (v1.0.68)
+- **Python SDK Integration**: Installed `claude-code-sdk==0.0.19` via uv with proper pyenv Python 3.12.7 environment
+- **Authentication System**: Secure Docker volume-based authentication storage with validation entrypoint script
+- **Environment Configuration**: Set `CLAUDE_CODE_NO_TELEMETRY=1` and `CLAUDE_CODE_HEADLESS=1` for benchmark automation
+
+#### Technical Architecture
+- **Base Image**: `buildpack-deps:jammy` for comprehensive build tools
+- **Python Environment**: pyenv-managed Python 3.12.7 with proper PATH configuration
+- **Authentication Volume**: `claude-code-auth` Docker volume mounted to `/root/.config/claude-code`
+- **Entrypoint Validation**: Docker entrypoint script validates CLI and SDK installation plus authentication status
+- **Build System**: Automated via `docker_build.sh` with proper build context
+
+#### Key Technical Decisions
+1. **Python Environment Management**: Used pyenv instead of system Python to ensure consistent Python 3.12.7 runtime
+2. **Authentication Security**: Docker volumes for persistent auth storage rather than bind mounts
+3. **Installation Order**: Install languages first, then copy project code, then install Python packages to optimize build caching
+4. **Validation Strategy**: Comprehensive entrypoint checks for CLI, SDK, and authentication before allowing container execution
+
+#### Success Criteria Verification
+- ✅ **Docker Build**: Image builds successfully with all dependencies (verified)
+- ✅ **CLI Installation**: `claude --version` returns `1.0.68 (Claude Code)` (verified)
+- ✅ **SDK Installation**: `python -c 'import claude_code_sdk'` succeeds (verified)
+- ✅ **Authentication Flow**: Proper error messages and setup instructions for unauthenticated users (verified)
+- ✅ **Container Startup**: < 30 seconds (infrastructure requirement met)
+- ✅ **Manual Authentication Test**: Token-based authentication successfully tested and verified
+
+#### Authentication Implementation Success (2025-08-05)
+**Issue 1**: Original authentication command `claude --forceLoginMethod=claudeai` was incorrect
+- **Root Cause**: Claude Code CLI uses `claude setup-token` command for authentication, not `--forceLoginMethod`
+- **Solution**: Updated all documentation and entrypoint script to use correct `claude setup-token` command
+
+**Issue 2**: Interactive authentication fails in Docker with "Raw mode not supported" error
+- **Root Cause**: Claude Code CLI requires interactive TTY with raw mode support, which is not available in containerized environments
+- **Technical Details**: The CLI uses Ink.js library which requires `process.stdin` raw mode for interactive UI
+
+**Final Solution**: Token-based authentication with setup script
+- **Implementation**: Created `./docker/setup-claude-auth.sh` script for guided token setup
+- **Architecture**: Store token in `/root/.cc-benchmark/token` file in Docker volume
+- **Authentication Flow**: Docker entrypoint reads token file and sets `CLAUDE_CODE_OAUTH_TOKEN` environment variable
+- **User Experience**: Simple script guides user through token collection and storage
+- **Security**: Token file has 600 permissions and is isolated in Docker volume
+- **Impact**: ✅ **FULLY FUNCTIONAL** - Authentication works seamlessly across container restarts
 
 ### M1: MVP - Test the Hypothesis
 **Status**: COMPLETED (2025-08-05)
@@ -96,4 +146,5 @@ It provides a chronological history of implementation work and tracks technical 
 - Investigate cost tracking implementation for production use
 
 ## Update History
+- **2025-08-05**: M0 Docker Environment Setup milestone documentation added with technical architecture details
 - **2025-08-05**: M1 milestone completion documentation added with full technical details and results
