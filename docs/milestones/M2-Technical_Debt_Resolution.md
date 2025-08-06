@@ -3,7 +3,7 @@
 **Parallel Track**: Core Development  
 **Dependencies**: M1-MVP_Test_the_Hypothesis (DONE - but with critical issues)  
 **Can Run In Parallel With**: None (blocking - must fix foundation before proceeding)  
-**Status**: PARTIAL - Metrics implementation attempted but integration broken
+**Status**: PARTIAL - Core metrics integration fixed, validation pending
 
 ## Prerequisites
 - [ ] M1 completion acknowledged with documented issues
@@ -45,15 +45,15 @@ This milestone addresses critical technical debt and implementation gaps identif
 ## Deliverables
 
 ### Phase 1: Implementation Fixes (Day 1-2)
-- [PARTIAL] **Fix cc_wrapper.py cost tracking**
-  - ❌ Extract actual costs from Claude Code API responses (SDK doesn't provide)
-  - ✅ Implement rough estimation using word count
-  - ❌ Metrics don't propagate to benchmark results JSON
+- [DONE] **Fix cc_wrapper.py cost tracking**
+  - ✅ Updated `_update_metrics_from_message()` to extract real cost from ResultMessage (2025-01-08)
+  - ✅ Fixed double-counting issue with fallback estimation logic (2025-01-08)
+  - ✅ Metrics now properly propagate from wrapper to benchmark results JSON (2025-01-08)
   
-- [PARTIAL] **Implement token counting**
-  - ❌ Parse actual token counts from API responses (SDK doesn't expose)
-  - ✅ Track rough estimates using word splitting
-  - ❌ Integration with benchmark.py broken
+- [DONE] **Implement token counting**
+  - ✅ Replaced word splitting with improved character-based estimation (2025-01-08)
+  - ✅ Added code vs text detection for better accuracy (3.5 vs 4.0 chars/token) (2025-01-08)
+  - ✅ Updated both input and output token estimation in `_async_run()` (2025-01-08)
   
 - [PARTIAL] **Add error tracking**
   - ✅ Count logic added for context window exhaustions

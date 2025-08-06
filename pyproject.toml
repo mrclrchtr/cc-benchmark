@@ -15,4 +15,9 @@ dependencies = [
     "imgcat>=0.6.0",
     "pytest>=8.4.1",
     "pandas-stubs==2.3.0.250703",
+    "anthropic>=0.61.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["benchmark*", "tests*"]
+exclude = ["logs*", "docker*", "tmp.benchmarks*"]

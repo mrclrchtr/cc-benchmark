@@ -35,13 +35,10 @@ from aider.coders import Coder, base_coder
 from aider.dump import dump  # noqa: F401
 from aider.io import InputOutput
 
-# Import Claude Code wrapper for benchmarking
-try:
-    from cc_wrapper import ClaudeCodeWrapper
-except ImportError:
-    ClaudeCodeWrapper = None
+# Import Claude Code wrapper for benchmarking (required for --use-claude-code flag)
+from cc_wrapper import ClaudeCodeWrapper
 
-BENCHMARK_DNAME = Path(os.environ.get("AIDER_BENCHMARK_DIR", "tmp.benchmarks"))
+BENCHMARK_DNAME = Path(os.environ.get("CC_BENCHMARK_DIR", "tmp.benchmarks"))
 
 EXERCISES_DIR_DEFAULT = "polyglot-benchmark"
 
@@ -54,7 +51,7 @@ load_dotenv(override=True)
 def setup_logging():
     """Configure logging to write to both console and file."""
     # Create logs directory if it doesn't exist
-    log_dir = Path("/logs" if os.environ.get("AIDER_DOCKER") else "logs")
+    log_dir = Path("/logs" if os.environ.get("CC_BENCHMARK_DOCKER") else "logs")
     log_dir.mkdir(exist_ok=True)
     
     # Configure root logger
@@ -305,7 +302,7 @@ def main(
     assert len(updated_dirnames) == 1, updated_dirnames
     dirname = updated_dirnames[0]
 
-    if "AIDER_DOCKER" not in os.environ:
+    if "CC_BENCHMARK_DOCKER" not in os.environ:
         logging.warning("Benchmarking runs unvetted code from GPT, run in a docker container")
         return
 
@@ -1054,8 +1051,8 @@ def run_unit_tests(original_dname, testdir, history_fname, test_files):
         ".py": ["pytest"],
         ".rs": ["cargo", "test", "--", "--include-ignored"],
         ".go": ["go", "test", "./..."],
-        ".js": ["/aider/benchmark/npm-test.sh"],
-        ".cpp": ["/aider/benchmark/cpp-test.sh"],
+        ".js": ["/cc-benchmark/benchmark/npm-test.sh"],
+        ".cpp": ["/cc-benchmark/benchmark/cpp-test.sh"],
         ".java": ["./gradlew", "test"],
     }
 
