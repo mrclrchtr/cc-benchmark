@@ -96,6 +96,40 @@ This document tracks over-engineering and technical debt issues identified durin
 - **Impact resolved**: Complete visibility into benchmark execution from host system
 - **Status**: COMPLETED (2025-08-06)
 
+## Critical Technical Debt (M1 - URGENT)
+
+### 1. Fake Metrics Implementation - BLOCKING
+**Issue**: All cost and token tracking in cc_wrapper.py is hardcoded to 0
+- **Location**: `benchmark/cc_wrapper.py` lines 230-236
+- **Impact**: Makes benchmark results scientifically meaningless
+- **Specifics**:
+  - `total_cost = 0` (hardcoded, never updated)
+  - `total_tokens_sent = 0` (hardcoded)
+  - `total_tokens_received = 0` (hardcoded)
+  - `num_exhausted_context_windows = 0` (never incremented)
+- **Resolution**: Parse actual values from Claude Code API responses
+- **Priority**: CRITICAL - blocks all meaningful comparisons
+- **Status**: PENDING - Must fix in M2 Day 1
+
+### 2. Documentation Line Number Drift - HIGH
+**Issue**: CLAUDE.md references outdated line numbers (20+ lines off)
+- **Location**: CLAUDE.md lines 27, 55, 92-100
+- **Impact**: Confuses contributors, indicates poor maintenance
+- **Specifics**:
+  - Claims integration at lines 822-863, actual: 843-866
+  - Claims integration at lines 878-883 (inconsistent)
+- **Resolution**: Update all line references after code changes
+- **Priority**: HIGH - affects developer experience
+- **Status**: PENDING
+
+### 3. Milestone Status Integrity - HIGH
+**Issue**: M1 marked "SUCCESS" despite known implementation gaps
+- **Location**: M1 milestone document
+- **Impact**: Undermines project credibility
+- **Resolution**: Updated to PARTIAL status, needs completion with real metrics
+- **Priority**: HIGH - integrity issue
+- **Status**: PARTIALLY ADDRESSED - status updated but implementation still broken
+
 ## Lessons Learned
 
 1. **Start Simple**: Begin with standard practices, add complexity only when needed
@@ -103,6 +137,8 @@ This document tracks over-engineering and technical debt issues identified durin
 3. **Documentation Sync**: Ensure status consistency across all project documents
 4. **Docker Standards**: Use established Docker patterns rather than custom solutions
 5. **Time Boxing**: Set strict limits to prevent gold-plating
+6. **Integrity First**: Never claim success with known fake data
+7. **Metrics Matter**: Without real metrics, benchmarks are meaningless
 
 ## Philosophy for Future Development
 

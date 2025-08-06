@@ -3,7 +3,7 @@
 **Parallel Track**: Core Development  
 **Dependencies**: M0-Docker_Environment_Setup (DONE), M0_1-Docker_Environment_Cleanup (DONE)  
 **Can Run In Parallel With**: None (requires working Docker environment)  
-**Status**: COMPLETED
+**Status**: PARTIAL (functional but with critical implementation gaps)
 
 ## Overview
 The MVP milestone aims to validate the core hypothesis that Claude Code can outperform aider's 85% pass rate on Python exercises using the existing benchmark infrastructure. This involves minimal integration work - creating a single wrapper file and testing Claude Code SDK on a subset of exercises to prove the concept before full implementation.
@@ -134,17 +134,8 @@ else:
 4. **Dependencies**: Optimized pyproject.toml dependencies, removing unnecessary `importlib-resources`
 5. **Testing**: Validated basic SDK functionality with simple test script
 
-### ⚠️ MVP Results - INCOMPLETE
-1. **Integration Success**: Claude Code SDK integrated with benchmark infrastructure
-2. **Test Execution**: Only 2 exercises tested instead of promised 10:
-   - `go-counting`: FAILED (0/2 tests passed)
-   - `grade-school`: PASSED (1/1 tests passed)
-3. **Pass Rate Results**: **50% pass rate (1/2 exercises)** - insufficient sample size for validation
-4. **Missing Deliverables**:
-   - Did NOT run full python-10 benchmark suite as specified
-   - Did NOT achieve statistically meaningful comparison to aider's 85% baseline
-   - Did NOT investigate go-counting failure
-5. **Hypothesis Assessment**: **NOT VALIDATED** - Insufficient testing (only 2 exercises)
+### ⚠️ Initial Test Run (Historical Note)
+An initial test run with only 2 exercises showed mixed results but was insufficient for validation. This was superseded by the full 10-exercise test documented below.
 
 ### 🔧 Technical Implementation Details
 - **Integration Point**: Lines 843-866 in `benchmark/benchmark.py`
@@ -163,9 +154,9 @@ else:
 - Failed: 1 (go-counting)
 - Pass rate: 50%
 
-### ✅ M1 SUCCESS - Hypothesis Validated
+### ⚠️ M1 PARTIAL SUCCESS - Integration Working but Implementation Incomplete
 
-**Final Status**: **COMPLETED** - Claude Code SDK successfully integrated and validated
+**Actual Status**: **PARTIALLY COMPLETED** - Claude Code SDK integrated and showing promising results, but with critical implementation gaps that must be addressed in M2
 
 ## Benchmark Results Summary
 
@@ -194,20 +185,27 @@ else:
 1. ❌ **wordy** - Natural language arithmetic parser (21/25 tests passed, error handling edge cases)
 2. ❌ **tree-building** - Binary tree construction from records (failed on invalid records validation)
 
-## Technical Achievements
+## What Actually Works vs What's Missing
 
-**Integration Success**:
-1. ✅ **SDK Compatibility**: Claude Code SDK integrates seamlessly with aider's benchmark infrastructure
-2. ✅ **Docker Environment**: Full containerized execution with proper authentication  
-3. ✅ **Permission Resolution**: `acceptEdits` mode enables automated file modifications
-4. ✅ **Results Format**: Generated `.aider.results.json` files match aider's exact format
-5. ✅ **Multi-attempt Strategy**: Automatic retry logic works correctly (robot-name passed on attempt 2)
+### ✅ What's Working:
+1. **Basic SDK Integration**: Claude Code SDK connects and can execute exercises
+2. **Docker Environment**: Container runs with authentication via .env file
+3. **File Modifications**: SDK can modify files and run tests
+4. **Results Format**: JSON output structure matches aider's format
 
-**Key Technical Solutions**:
-- **Root Permission**: `permission_mode="acceptEdits"` bypasses interactive approval requirements
-- **Async Integration**: Successful async-to-sync bridging using `asyncio.run()`  
-- **File Handling**: Proper working directory management and file modification tracking
-- **Error Handling**: Graceful handling of SDK errors and authentication issues
+### ❌ What's NOT Working (Critical Gaps):
+1. **Cost Tracking**: Hardcoded to 0.0 - no actual cost calculation
+2. **Token Counting**: All token metrics hardcoded to 0
+3. **Error Metrics**: Context exhaustions and malformed responses not tracked
+4. **Performance Metrics**: No API latency or throughput measurement
+5. **Session Tracking**: Hash lists never populated
+6. **Proper Error Handling**: Basic check only, no categorization
+
+### ⚠️ Implementation Reality:
+- The wrapper is a **proof of concept** that demonstrates feasibility
+- Most Coder interface methods are **stub implementations**
+- Metrics shown in results are **not real data**
+- This is sufficient to validate the approach but **not production-ready**
 
 ## Timeline
 - **Start**: After M0_1 completion (Docker environment ready)
@@ -233,19 +231,32 @@ else:
 | System | Docker resources, API calls | 4GB RAM, API quota | Moderate API usage |
 
 ## Downstream Impact
-- **M2-Language_Support_Expansion**: Requires validated MVP approach
-- **M3-Performance_Analysis**: Depends on reliable benchmarking methodology
-- **All future milestones**: Success validates feasibility of full benchmark suite
+- **M2-Technical_Debt_Resolution**: MUST fix implementation gaps before expansion
+- **M3-Full_Benchmark**: Cannot proceed until metrics are real
+- **All future milestones**: Blocked by incomplete implementation
 
-### 🚨 Technical Debt - Concerning Implementations
-1. **Hardcoded Metrics**: Cost tracking hardcoded to 0.0 - no actual cost calculation
-2. **Missing Token Tracking**: All token counts (sent/received/thinking) hardcoded to 0
-3. **Incomplete Error Handling**: No proper handling for authentication failures beyond basic check
-4. **Stub Implementations**: Multiple wrapper attributes initialized but never properly updated:
-   - `num_exhausted_context_windows` always 0
-   - `num_malformed_responses` always 0
-   - `chat_completion_call_hashes` empty list
-   - `chat_completion_response_hashes` empty list
-5. **No Performance Metrics**: Missing implementation for tracking actual API performance
-6. **Compatibility Issues**: Wrapper mimics aider interface but doesn't implement most functionality properly
-7. **Docker Integration Gap**: Current wrapper tested only on host system, not validated in Docker environment from M0
+## Honest Assessment and Path Forward
+
+### Reality Check
+This milestone achieved its primary goal of proving Claude Code CAN work with the benchmark infrastructure and CAN achieve competitive pass rates (80% vs aider's 85%). However, the implementation is incomplete:
+
+1. **What we proved**: Claude Code is viable for benchmarking
+2. **What we built**: A functional but incomplete wrapper
+3. **What's missing**: Real metrics, proper error handling, complete interface implementation
+4. **Why it matters**: Can't make valid comparisons without real data
+
+### Critical Technical Debt (Must Fix in M2)
+1. **Metrics**: All cost and token tracking is fake (hardcoded to 0)
+2. **Error Handling**: No proper error categorization or recovery
+3. **Interface**: Most Coder methods are empty stubs
+4. **Validation**: No verification that metrics are real
+5. **Documentation**: Line numbers in CLAUDE.md are outdated by 20+ lines
+
+### The Uncomfortable Truth
+- We claimed "SUCCESS" while knowing the implementation was incomplete
+- The 80% pass rate is real, but we can't measure its cost or efficiency
+- This is technical debt disguised as progress
+- M2 MUST fix these issues before any further development
+
+### Recommendation
+**DO NOT PROCEED to language expansion or full benchmarking until M2 completes the implementation properly.** The foundation must be solid before building on it.
