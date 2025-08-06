@@ -96,37 +96,42 @@ This document tracks over-engineering and technical debt issues identified durin
 - **Impact resolved**: Complete visibility into benchmark execution from host system
 - **Status**: COMPLETED (2025-08-06)
 
-## Critical Technical Debt (M1 - URGENT)
+## Critical Technical Debt (M2 FAILED TO FIX - STILL BLOCKING)
 
-### 1. Fake Metrics Implementation - BLOCKING
-**Issue**: All cost and token tracking in cc_wrapper.py is hardcoded to 0
-- **Location**: `benchmark/cc_wrapper.py` lines 230-236
-- **Impact**: Makes benchmark results scientifically meaningless
+### 1. Broken Metrics Integration - CRITICAL BLOCKING
+**Issue**: Wrapper calculates metrics but they NEVER reach benchmark results
+- **Location**: Integration between `cc_wrapper.py` and `benchmark.py`
+- **Evidence**: Latest benchmark run shows all zeros despite M2 "fix"
+- **Impact**: Makes ALL benchmark results scientifically meaningless
 - **Specifics**:
-  - `total_cost = 0` (hardcoded, never updated)
-  - `total_tokens_sent = 0` (hardcoded)
-  - `total_tokens_received = 0` (hardcoded)
-  - `num_exhausted_context_windows = 0` (never incremented)
-- **Resolution**: Parse actual values from Claude Code API responses
-- **Priority**: CRITICAL - blocks all meaningful comparisons
-- **Status**: PENDING - Must fix in M2 Day 1
+  - Wrapper shows: "Cost: $0.000024, Tokens: 3/1" internally
+  - Results JSON shows: `cost: 0.0, tokens: 0`
+  - Integration point in benchmark.py doesn't extract wrapper metrics
+- **M2 Attempt**: Added metric tracking but didn't fix the actual problem
+- **Priority**: CRITICAL - blocks everything, M2 marked DONE despite this
+- **Status**: BROKEN - Must fix integration, not just add more code
 
-### 2. Documentation Line Number Drift - HIGH
-**Issue**: CLAUDE.md references outdated line numbers (20+ lines off)
-- **Location**: CLAUDE.md lines 27, 55, 92-100
-- **Impact**: Confuses contributors, indicates poor maintenance
+### 2. Fake Token Counting - HIGH
+**Issue**: Using word splits instead of real token counts
+- **Location**: `cc_wrapper.py` lines with `len(prompt.split())`
+- **Impact**: Token counts completely inaccurate
 - **Specifics**:
-  - Claims integration at lines 822-863, actual: 843-866
-  - Claims integration at lines 878-883 (inconsistent)
-- **Resolution**: Update all line references after code changes
-- **Priority**: HIGH - affects developer experience
-- **Status**: PENDING
+  - Word count != token count (can be 2-3x off)
+  - SDK may provide real counts but not being used
+  - Hardcoded pricing will be wrong when models change
+- **Status**: PARTIAL - M2 added fake tracking instead of real data
 
-### 3. Milestone Status Integrity - HIGH
-**Issue**: M1 marked "SUCCESS" despite known implementation gaps
-- **Location**: M1 milestone document
-- **Impact**: Undermines project credibility
-- **Resolution**: Updated to PARTIAL status, needs completion with real metrics
+### 3. Documentation Line Number Drift - RESOLVED
+**Issue**: CLAUDE.md references outdated line numbers
+- **Status**: FIXED in M2 (one of the few things that actually worked)
+
+### 4. Milestone Status Integrity - HIGH
+**Issue**: Milestones marked "DONE" despite broken functionality
+- **Examples**: 
+  - M1 marked "SUCCESS" with all metrics showing zeros
+  - M2 marked "COMPLETED" with integration completely broken
+- **Impact**: False sense of progress, technical debt accumulation, undermines credibility
+- **Resolution**: Updated to PARTIAL status, needs real implementation
 - **Priority**: HIGH - integrity issue
 - **Status**: PARTIALLY ADDRESSED - status updated but implementation still broken
 

@@ -5,19 +5,19 @@ This document tracks all project milestones and their completion status.
 
 ## Immediate Action Items (Start TODAY)
 
-### 🚨 Critical: Fix Metrics First (Day 1)
-Before ANY other work, implement real metrics in cc_wrapper.py:
-1. Parse actual costs from Claude Code API responses
-2. Extract real token counts (input/output)
-3. Validate metrics > 0 with quick test
-4. This unblocks everything else
+### 🚨 Critical: Fix Integration First (BLOCKING EVERYTHING)
+M2 added metric tracking but it's BROKEN - results still show all zeros:
+1. **Fix benchmark.py integration** - Make wrapper metrics flow to results JSON
+2. **Verify with test run** - Ensure .aider.results.json has real metrics
+3. **Find SDK metric access** - Get actual tokens/costs, not word counts
+4. **Validate end-to-end** - Full flow from wrapper to results file
 
-### Then Complete M1 Properly (Day 2)
-Once metrics work:
-1. Re-run 10 Python exercises
-2. Document real costs and tokens
-3. Update M1 with actual data
-4. Mark M1 as truly DONE
+### Then Fix M2 Properly
+Once integration works:
+1. Replace word-count estimates with real SDK metrics
+2. Test error tracking with actual failures
+3. Run comprehensive benchmark (50+ exercises)
+4. Update M2 status to DONE only when verified working
 
 ## Active Milestones
 
@@ -29,7 +29,7 @@ Once metrics work:
 1. [M1-MVP_Test_the_Hypothesis.md](milestones/M1-MVP_Test_the_Hypothesis.md) - [PARTIAL] (80% pass rate achieved but with hardcoded metrics and incomplete implementation)
 
 ### Phase 2 - Technical Debt Resolution  
-1. [M2-Technical_Debt_Resolution.md](milestones/M2-Technical_Debt_Resolution.md) - [DONE] (Critical metrics implementation and documentation synchronization completed)
+1. [M2-Technical_Debt_Resolution.md](milestones/M2-Technical_Debt_Resolution.md) - [PARTIAL] (Metrics code added but integration broken - results still show zeros)
 
 ### Phase 3 - Full Benchmark
 _To be defined after M2 completion_
@@ -50,29 +50,36 @@ _To be defined after M3 completion_
 - [BLOCKED] -> Blocked/Waiting
 - [CANCELLED] -> Cancelled
 
-## Current Execution Strategy (Critical Decision)
+## Current Execution Strategy (UPDATED after M2 Review)
 
 ### The Situation
-M1 achieved its core goal (80% pass rate) but with fake metrics (cost/tokens hardcoded to 0). This makes the results scientifically meaningless and blocks all future work.
+- M1: Achieved 80% pass rate but metrics all zeros
+- M2: Added metric tracking code but **integration broken** - results STILL show zeros
+- Core Problem: Wrapper calculates metrics but they never reach benchmark results
 
-### Recommended Approach: Hybrid M2→M1 Completion
+### Critical Path Forward
 
-**Week 1 Execution Plan:**
-1. **Day 1 (Immediate)**: Start M2 - Fix critical metrics in cc_wrapper.py (4-6 hours)
-   - Implement real cost tracking
-   - Add actual token counting
-   - Quick validation that metrics > 0
+**Immediate Actions (Day 1)**:
+1. **Debug Integration** (2-3 hours)
+   - Find where benchmark.py should extract wrapper metrics
+   - Fix the integration point so metrics flow to results
+   - Verify with single test that JSON has real data
 
-2. **Day 2**: Complete M1 properly with real metrics (4 hours)
-   - Re-run 10 Python exercises WITH real metrics
-   - Document actual costs and token usage
-   - Update M1 milestone with real data
-   - Mark M1 as DONE (truly complete)
+2. **Fix M2 Implementation** (4-6 hours)  
+   - Make wrapper metrics actually work end-to-end
+   - Replace word-count with real SDK metrics if possible
+   - Test that all exercises generate real metrics
 
-3. **Days 3-5**: Continue M2 - remaining fixes
-   - Complete error handling
-   - Fix documentation inconsistencies
-   - Run comprehensive validation (50+ exercises)
+3. **Validate Everything** (2 hours)
+   - Run 10+ exercises with full metrics
+   - Confirm .aider.results.json files have real data
+   - Only then update M2 to DONE
+
+**Week 1 Reality Check**:
+- Day 1-2: Fix the broken integration (M2 is NOT done)
+- Day 3: Re-validate M1 with working metrics
+- Day 4-5: Run comprehensive benchmark
+- Day 6-7: Document real results and costs
 
 ### Why This Order?
 - **Without real metrics, any testing is meaningless** - we can't compare to aider without knowing costs

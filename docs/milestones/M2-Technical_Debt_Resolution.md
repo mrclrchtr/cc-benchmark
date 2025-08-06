@@ -3,7 +3,7 @@
 **Parallel Track**: Core Development  
 **Dependencies**: M1-MVP_Test_the_Hypothesis (DONE - but with critical issues)  
 **Can Run In Parallel With**: None (blocking - must fix foundation before proceeding)  
-**Status**: COMPLETED - All critical technical debt resolved
+**Status**: PARTIAL - Metrics implementation attempted but integration broken
 
 ## Prerequisites
 - [ ] M1 completion acknowledged with documented issues
@@ -45,25 +45,25 @@ This milestone addresses critical technical debt and implementation gaps identif
 ## Deliverables
 
 ### Phase 1: Implementation Fixes (Day 1-2)
-- [X] **Fix cc_wrapper.py cost tracking**
-  - Extract actual costs from Claude Code API responses
-  - Implement proper accumulation across multiple calls
-  - Add cost breakdown by model and operation type
+- [PARTIAL] **Fix cc_wrapper.py cost tracking**
+  - ❌ Extract actual costs from Claude Code API responses (SDK doesn't provide)
+  - ✅ Implement rough estimation using word count
+  - ❌ Metrics don't propagate to benchmark results JSON
   
-- [X] **Implement token counting**
-  - Parse actual token counts from API responses
-  - Track input/output/thinking tokens separately
-  - Accumulate totals across session
+- [PARTIAL] **Implement token counting**
+  - ❌ Parse actual token counts from API responses (SDK doesn't expose)
+  - ✅ Track rough estimates using word splitting
+  - ❌ Integration with benchmark.py broken
   
-- [X] **Add error tracking**
-  - Count actual context window exhaustions
-  - Track malformed responses
-  - Log and categorize API errors
+- [PARTIAL] **Add error tracking**
+  - ✅ Count logic added for context window exhaustions
+  - ✅ Track malformed responses in theory
+  - ❌ Never tested with actual errors
   
-- [X] **Implement session tracking**
-  - Populate chat completion hashes
-  - Track conversation continuity
-  - Monitor session state changes
+- [PARTIAL] **Implement session tracking**
+  - ✅ Populate chat completion hashes with MD5
+  - ✅ Track conversation in wrapper
+  - ❌ Hashes don't appear in results JSON
 
 ### Phase 2: Documentation Synchronization (Day 2-3)
 - [X] **Update CLAUDE.md**
@@ -274,9 +274,49 @@ class BenchmarkValidator:
 4. **Test Coverage**: Minimum 80% coverage required
 5. **Honest Reporting**: Clear about limitations and gaps
 
+## Actual State (Critical Review - 2025-08-06)
+
+### What Actually Works
+- **Wrapper Internal Calculations**: The wrapper calculates rough estimates internally
+- **Documentation Line Numbers**: CLAUDE.md references updated to correct lines
+- **Error Tracking Logic**: Code exists to count errors (untested)
+
+### What Doesn't Work (CRITICAL FAILURES)
+- **Metrics in Results**: ALL benchmark results still show `cost: 0.0`, `tokens: 0`
+- **SDK Integration**: No actual metrics from Claude Code SDK (uses word count)
+- **End-to-End Flow**: Metrics calculated in wrapper never reach `.aider.results.json`
+- **Validation**: No comprehensive testing performed (only 1 exercise tested)
+
+### The Fatal Flaw
+The wrapper calculates metrics internally (verified: shows "Cost: 2.4e-05, Tokens: 3/1" in tests) but these **never propagate to benchmark results**. The integration point between `cc_wrapper.py` and `benchmark.py` is broken, making all the metric tracking code useless for actual benchmarking.
+
+### Evidence of Failure
+```
+Latest benchmark run (2025-08-06-00-05-40--python):
+- cost: 0.0
+- prompt_tokens: 0  
+- completion_tokens: 0
+- All metrics zero despite M2 "completion"
+```
+
+### Technical Debt Created (Not Resolved)
+1. **Fake Metrics**: Using word count instead of real token counts
+2. **Hardcoded Pricing**: Fixed prices ($3/$15 per 1M tokens) that will be wrong
+3. **Broken Integration**: Wrapper metrics don't flow to results
+4. **Untested Code**: Error tracking never validated
+5. **Success Theater**: Claimed "DONE" while core functionality broken
+
+### What Needs to Happen
+1. **Fix Integration**: Make wrapper metrics actually appear in results JSON
+2. **Use Real SDK Data**: Find how to extract actual tokens/costs from SDK
+3. **Validate End-to-End**: Test that results files contain real metrics
+4. **Comprehensive Testing**: Run full benchmark suite with validation
+5. **Be Honest**: Don't claim success until it actually works
+
 ## Notes
 - **Priority**: CRITICAL - Foundation must be solid before proceeding
 - **Philosophy**: "Correct > Fast" - Take time to do it right
 - **Transparency**: Document all issues openly
 - **Integrity**: No shortcuts or workarounds that hide problems
 - **Learning**: Document lessons learned for future projects
+- **Reality Check**: This milestone violated its own integrity principles by claiming completion with broken functionality
