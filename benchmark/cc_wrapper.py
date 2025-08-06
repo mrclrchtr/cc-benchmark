@@ -230,39 +230,23 @@ class ClaudeCodeWrapper:
                         if self.verbose:
                             print(f"[ClaudeCodeWrapper] Updated thinking tokens: {self.total_thinking_tokens}")
             
-            # Handle AssistantMessage - check for usage/billing info
-            elif message_type == 'AssistantMessage':
-                # Look for usage information in the message structure
-                if hasattr(message, 'usage') and message.usage:
-                    usage = message.usage
-                    if hasattr(usage, 'input_tokens'):
-                        input_tokens = getattr(usage, 'input_tokens', 0)
-                        if input_tokens > 0:
-                            # Replace estimated tokens with real API tokens
-                            self.total_tokens_sent = input_tokens
-                    if hasattr(usage, 'output_tokens'):
-                        output_tokens = getattr(usage, 'output_tokens', 0)
-                        if output_tokens > 0:
-                            # Replace estimated tokens with real API tokens
-                            self.total_tokens_received = output_tokens
-                    if hasattr(usage, 'cache_read_input_tokens'):
-                        # Claude's thinking tokens
-                        self.total_thinking_tokens += getattr(usage, 'cache_read_input_tokens', 0)
-                        
-                # Check message.message if it has usage info
-                elif hasattr(message, 'message') and hasattr(message.message, 'usage'):
-                    usage = message.message.usage
-                    if hasattr(usage, 'input_tokens'):
-                        input_tokens = getattr(usage, 'input_tokens', 0)
-                        if input_tokens > 0:
-                            self.total_tokens_sent = input_tokens
-                    if hasattr(usage, 'output_tokens'):
-                        output_tokens = getattr(usage, 'output_tokens', 0)
-                        if output_tokens > 0:
-                            self.total_tokens_received = output_tokens
+            # Note: AssistantMessage contains only content blocks, no usage data
+            # All metrics are exclusively available in ResultMessage (verified via SDK investigation)
             
-            # Check for error indicators in any message type
-            if hasattr(message, 'error') and message.error:
+            # Check for SDK-specific error indicators in ResultMessage
+            if message_type == 'ResultMessage':
+                if hasattr(message, 'is_error') and message.is_error:
+                    self.num_malformed_responses += 1
+                    if self.verbose:
+                        print(f"[ClaudeCodeWrapper] ResultMessage indicates error: {getattr(message, 'subtype', 'unknown')}")
+                elif hasattr(message, 'subtype') and 'error' in str(message.subtype).lower():
+                    if 'max_turns' in str(message.subtype).lower() or 'context' in str(message.subtype).lower():
+                        self.num_exhausted_context_windows += 1
+                    else:
+                        self.num_malformed_responses += 1
+                        
+            # Fallback generic error detection for other message types
+            elif hasattr(message, 'error') and message.error:
                 error_str = str(message.error).lower()
                 if "context" in error_str and ("window" in error_str or "length" in error_str):
                     self.num_exhausted_context_windows += 1

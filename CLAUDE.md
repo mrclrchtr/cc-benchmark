@@ -108,7 +108,7 @@ The implementation integrates Claude Code via the official Python SDK using a wr
 - **Benchmark Engine**: `/benchmark/benchmark.py` - Main orchestrator and Claude Code integration point
 - **Claude Code Wrapper**: `/benchmark/cc_wrapper.py` - SDK wrapper mimicking aider's `Coder` interface  
 - **Exercise Prompts**: `/benchmark/prompts.py` - Minimal templates for exercise instructions
-- **Development Tests**: `/dev-tests/` - SDK integration testing (`simple_test.py`, `test_sdk.py`)
+- **Development Tests**: `/dev-tests/` - Comprehensive Claude Code integration validation suite
 
 ### Output and Results
 - **Benchmark Results**: `.aider.results.json` files in each test directory
