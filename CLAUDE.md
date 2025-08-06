@@ -45,7 +45,36 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
   - `.java` → `./gradlew test`
 
 ## Development Commands
-- **uv**: use `uv` to install dependencies and run tests
+
+### Benchmark Execution
+```bash
+# Run benchmark with Claude Code (requires authentication)
+python benchmark/benchmark.py python --use-claude-code --languages python --num-tests 10 --new
+
+# Key flags:
+# --use-claude-code: Use Claude Code instead of aider
+# --languages: Specify language(s) to test (python, go, rust, javascript, cpp, java)
+# --num-tests: Number of exercises to run
+# --new: Start fresh benchmark run (avoids "prior runs exist" warning)
+# --tries: Number of attempts per exercise (default: 3)
+# --verbose: Enable detailed logging
+```
+
+### Testing & Validation
+```bash
+# Quick metrics validation (create a test script)
+python -c "from benchmark.cc_wrapper import ClaudeCodeWrapper; w=ClaudeCodeWrapper(verbose=True); print(w.run('What is 2+2?')); print(f'Cost: ${w.total_cost:.6f}, Tokens: {w.total_tokens_sent}/{w.total_tokens_received}')"
+
+# Monitor benchmark progress in real-time
+tail -f logs/benchmark.log
+
+# Check benchmark results
+find tmp.benchmarks -name "*.aider.results.json" -exec jq '.cost, .prompt_tokens, .completion_tokens' {} \;
+```
+
+### Dependencies
+- **uv**: Use `uv` to install dependencies and run tests
+- **claude-code-sdk**: Official Python SDK for Claude Code integration
 
 ## Claude Code Integration Strategy
 
@@ -98,6 +127,30 @@ For detailed project context, refer to these key documentation files:
 - **Architecture Documentation**:
   - `docs/architecture/logging.md` - Comprehensive logging system guide
 
+
+## Implementation Patterns & Lessons
+
+### Metrics Tracking Pattern
+When implementing metrics tracking in wrapper classes:
+1. Initialize tracking variables in `__init__`
+2. Update metrics after each API call
+3. Use rough estimates when exact data unavailable (e.g., `len(text.split())` for token counting)
+4. Track both successful and error cases
+5. Implement session tracking with hashes for debugging
+
+### Testing Integration Changes
+When modifying core integration:
+1. Create isolated test scripts first (outside main codebase)
+2. Validate metrics show real values (> 0) not hardcoded
+3. Test end-to-end flow before full benchmark runs
+4. Clean up test files after validation
+
+### Documentation Synchronization
+When code changes affect documentation:
+1. Update line number references immediately
+2. Use `grep -n "pattern"` to find current line numbers
+3. Keep CLAUDE.md focused on essential info (reference docs/ for details)
+4. Update milestone status in both individual files and MILESTONE_MANAGER.md
 
 # Programming Principles
 - DRY (Don't Repeat Yourself)
