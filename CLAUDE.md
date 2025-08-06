@@ -9,7 +9,13 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 
 ## CLAUDE.md rules
 - No tracking of changes or project state → it is tracked in `docs/MILESTONE_MANAGER.md`
-- Keep it as small as possible
+- New or changed commands/scripts? → Update "Development Commands"
+- New or changed test/build procedures? → Update "Test Infrastructure" section  
+- Changed integration points? → Update "Key Architecture" section
+- New or changed patterns AI should follow? → Document the pattern
+- BUT: Don't duplicate from docs/ → Use summary + reference instead
+
+**Keep it as small as possible**
 
 ## Key Architecture
 
@@ -43,16 +49,26 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 
 ## Claude Code Integration Strategy
 
-The implementation plan (docs/IMPLEMENTATION_PLAN.md) outlines integrating Claude Code via the official Python SDK:
+The implementation integrates Claude Code via the official Python SDK using a wrapper approach:
 
-1. **Create `cc_wrapper.py`**: A wrapper class that mimics aider's `Coder` interface using the `claude-code-sdk` Python package
-2. **Modify `benchmark.py`**: Add a `--use-claude-code` flag to switch between aider and Claude Code
-3. **SDK Usage**: Leverage SDK's structured message types, session management, and error handling
+1. **`benchmark/cc_wrapper.py`**: Wrapper class mimicking aider's `Coder` interface using `claude-code-sdk`
+2. **`benchmark/benchmark.py`**: Added `--use-claude-code` flag with integration at lines 878-883
+3. **SDK Usage**: Leverages SDK's structured message types, async/sync conversion, and session management
 
-Key integration points:
-- Replace `Coder.create()` call around line 822 in `benchmark.py`
-- Use SDK's `query()` function with `ClaudeCodeOptions` for configuration
-- Handle async/sync conversion with `asyncio.run()`
+**Key Integration Points**:
+- **Permission Handling**: Uses `permission_mode="acceptEdits"` for automated file modifications
+- **Authentication**: `.env` file approach with `CLAUDE_CODE_OAUTH_TOKEN`
+- **Results Format**: Generates aider-compatible `.aider.results.json` files
+- **Session Management**: Automatic continuity without manual intervention
+
+**Usage**:
+```bash
+# Python benchmark with Claude Code
+python benchmark/benchmark.py python --use-claude-code --languages python --num-tests 10
+
+# All languages benchmark
+python benchmark/benchmark.py python --use-claude-code
+```
 
 ## Important Files and Locations
 
@@ -74,6 +90,8 @@ For detailed project context, refer to these key documentation files:
   - `docs/tools/cc-cli.md` - Claude Code CLI usage and capabilities
   - `docs/tools/cc-sdk.md` - Python SDK integration details (`claude_code_sdk`)
   - `docs/tools/cc-models.md` - Claude Code models overview
+- **Architecture Documentation**:
+  - `docs/architecture/logging.md` - Comprehensive logging system guide
 
 
 # Programming Principles

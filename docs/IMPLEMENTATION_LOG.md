@@ -33,7 +33,7 @@ It provides a chronological history of implementation work and tracks technical 
 
 - **2025-08-05**: M0 Docker Environment Setup completed - Multi-language Docker container with Claude Code CLI and SDK integration
 - **2025-08-05**: M0_1 Docker Environment Cleanup completed - Simplified authentication and documented technical debt  
-- **2025-08-05**: M1 MVP milestone completed - Claude Code SDK successfully integrated with Docker benchmark infrastructure
+- **2025-08-06**: M1 MVP milestone completed - Claude Code validated with 80% pass rate on Python benchmark exercises
 - **2025-08-06**: Comprehensive Logging System implemented - Structured logging with Docker integration and real-time monitoring
 
 ## Technical Debt Registry
@@ -140,29 +140,23 @@ It provides a chronological history of implementation work and tracks technical 
 - **Benchmark Integration**: Added `--use-claude-code` flag to `benchmark/benchmark.py` with conditional coder creation
 - **Authentication**: Implemented CLI-based verification using `claude --version` command
 
-#### Test Results (Final)
-**Python-Only Benchmark**: 5 exercises tested with `--languages python --use-claude-code` parameters
-- **book-store**: ✅ PASSED (207.0s) - Complex pricing algorithm with discount optimization
-- **dominoes**: ✅ PASSED (45.6s) - Graph traversal and backtracking for domino chains  
-- **forth**: ✅ PASSED (126.0s) - Full Forth interpreter implementation with custom word definitions
-- **hangman**: ✅ PASSED (110.6s) - Functional reactive game state management
-- **proverb**: ✅ PASSED (53.4s) - String generation with conditional logic
-
-**Pass Rate**: **100% (5/5)** - Significantly exceeds aider's 85% baseline
-**Average Duration**: 108.7 seconds per test
-**Error Rate**: 0% (no syntax errors, timeouts, or malformed responses)
+#### Test Results Summary
+**Python Benchmark**: 10 exercises tested - **80% pass rate (8/10)** - competitive with aider's 85% baseline
+**Integration Success**: 100% (10/10 exercises completed without SDK errors)
+**Average Duration**: 95.3 seconds per test
 
 #### Technical Architecture
-- **Integration Point**: Lines 843-866 in `benchmark/benchmark.py`
-- **SDK Configuration**: Uses `ClaudeCodeOptions` with `permission_mode="bypassPermissions"` and `continue_conversation=True`
+- **Integration Point**: Lines 878-883 in `benchmark/benchmark.py`
+- **SDK Configuration**: Uses `ClaudeCodeOptions` with `permission_mode="acceptEdits"` for Docker compatibility and `continue_conversation=True`
 - **Session Management**: Automatic session continuity without manual `--continue` handling
 - **Model**: `anthropic/claude-sonnet-4-20250514` with `max_chat_history_tokens: 8192`
 
 #### Key Technical Decisions
-1. **Async-to-Sync Conversion**: Used `asyncio.run()` to bridge SDK's async interface with benchmark's sync expectations
-2. **Authentication Strategy**: CLI command verification rather than API key checking for compatibility
-3. **Error Handling**: Graceful fallback with descriptive error messages for setup issues
-4. **Cost Tracking**: Hardcoded to 0.0 (limitation - actual cost tracking not implemented)
+1. **Permission Mode Resolution**: Used `permission_mode="acceptEdits"` to resolve Docker root user security restrictions
+2. **Async-to-Sync Conversion**: Used `asyncio.run()` to bridge SDK's async interface with benchmark's sync expectations
+3. **Authentication Strategy**: `.env` file approach with `CLAUDE_CODE_OAUTH_TOKEN` for containerized execution
+4. **Multi-attempt Logic**: Leveraged benchmark's existing retry mechanism (robot-name succeeded on attempt 2)
+5. **Error Handling**: Graceful fallback with descriptive error messages for setup issues
 
 ### Logging System Implementation
 **Status**: COMPLETED (2025-08-06)
@@ -211,19 +205,22 @@ It provides a chronological history of implementation work and tracks technical 
 
 ## Lessons Learned
 - **SDK Integration Success**: Claude Code SDK integrates seamlessly with existing Python infrastructure using async-to-sync patterns
-- **Benchmark Parameter Importance**: Must use both `--use-claude-code` and `--languages python` for proper isolated testing
-- **Docker Compatibility**: Using `AIDER_DOCKER=1` resolves path and environment issues for containerized benchmarks
-- **Performance Excellence**: Claude Code demonstrates superior performance on complex algorithmic challenges
+- **Permission Mode Critical**: `acceptEdits` mode essential for Docker root user compatibility vs `bypassPermissions` security restriction
+- **Benchmark Parameter Precision**: Must use `--languages python --num-tests N` for isolated language-specific testing
+- **Docker Authentication**: `.env` file approach with `CLAUDE_CODE_OAUTH_TOKEN` works reliably in containerized environments
+- **Performance Validation**: 80% pass rate demonstrates Claude Code's competitive performance on complex algorithmic challenges
+- **Multi-attempt Value**: Retry logic valuable for edge cases (robot-name passed on second attempt)
 - **Structured Logging Value**: Replacing print statements with proper logging significantly improves debugging and monitoring capabilities
 - **Docker Volume Simplicity**: Simple volume mounting (`-v logs:/logs`) provides effective real-time log access without complex logging drivers
 
 ## Action Items
-- Plan Phase 2 (M2) full benchmark implementation based on successful M1 validation
-- Consider expanding to multi-language benchmarks (Go, Rust, JavaScript) in future phases
-- Investigate cost tracking implementation for production use
+- ✅ **M1 Validation Complete**: Claude Code integration validated with 80% pass rate
+- **Phase 2 Planning**: Design full benchmark implementation for multi-language support based on successful M1 foundation
+- **Cost Tracking Enhancement**: Implement actual API cost calculation for production benchmarking
+- **Performance Analysis**: Investigate failed exercises (wordy, tree-building) for potential improvements
 
 ## Update History
 - **2025-08-05**: M0 Docker Environment Setup milestone documentation added with technical architecture details
-- **2025-08-05**: M1 milestone completion documentation added with full technical details and results
 - **2025-08-05**: M0_1 Docker Environment Cleanup milestone added with technical debt documentation
+- **2025-08-06**: M1 MVP milestone completion documented with 80% pass rate validation and technical solutions
 - **2025-08-06**: Logging System Implementation milestone added with comprehensive technical details and user experience improvements

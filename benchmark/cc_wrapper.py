@@ -47,6 +47,22 @@ class ClaudeCodeWrapper:
         # Verify authentication
         self._verify_authentication()
 
+    def _get_permission_mode(self) -> str:
+        """Get appropriate permission mode based on execution environment.
+        
+        Returns:
+            Permission mode string for ClaudeCodeOptions
+        """
+        # Check if running as root user (Unix/Linux/macOS)
+        try:
+            is_root = os.geteuid() == 0
+        except AttributeError:
+            # Windows or other platforms without geteuid()
+            is_root = False
+            
+        # Use acceptEdits for root (Docker compatibility) or bypassPermissions otherwise
+        return "acceptEdits" if is_root else "bypassPermissions"
+
     def _verify_authentication(self) -> None:
         """Verify that Claude Code is logged in and available using SDK.
         
@@ -75,7 +91,7 @@ class ClaudeCodeWrapper:
         options = ClaudeCodeOptions(
             max_turns=1,
             model=ClaudeModel.HAIKU_3_5_LATEST.value,
-            permission_mode="bypassPermissions",
+            permission_mode=self._get_permission_mode(),
             cwd=self.cwd
         )
         
@@ -132,10 +148,10 @@ class ClaudeCodeWrapper:
         Returns:
             The response from Claude Code
         """
-        # Configure SDK options based on milestone specs
+        # Configure SDK options for benchmark execution
         options = ClaudeCodeOptions(
             model=self.model,
-            permission_mode="bypassPermissions",  # Auto-approve for benchmark
+            permission_mode=self._get_permission_mode(),  # Auto-approve for benchmark
             cwd=self.cwd,
             continue_conversation=True  # For session continuity
         )

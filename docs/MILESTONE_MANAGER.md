@@ -10,7 +10,7 @@ This document tracks all project milestones and their completion status.
 2. [M0_1-Docker_Environment_Cleanup.md](milestones/M0_1-Docker_Environment_Cleanup.md) - [DONE] (Cleanup milestone)
 
 ### Phase 1 - MVP
-1. [M1-MVP_Test_the_Hypothesis.md](milestones/M1-MVP_Test_the_Hypothesis.md) - [WIP] (Integration complete, MVP validation incomplete - only 2/10 exercises tested)
+1. [M1-MVP_Test_the_Hypothesis.md](milestones/M1-MVP_Test_the_Hypothesis.md) - [DONE] (80% pass rate achieved - Claude Code successfully validated)
 
 ### Phase 2 - Full Benchmark
 _To be defined after M1 completion_
@@ -32,4 +32,4 @@ _To be defined after M2 completion_
 ## Notes
 - Milestones are extracted from the [Implementation Plan](IMPLEMENTATION_PLAN.md)
 - Each milestone follows the template in `.claude/templates/milestone-template.md`
-- **M1 Success**: Successfully validated Claude Code integration with 100% pass rate on Python exercises, exceeding aider's 85% baseline
+- **M1 Success**: Successfully validated Claude Code integration with 80% pass rate on Python exercises, competitive with aider's 85% baseline

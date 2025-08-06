@@ -14,4 +14,5 @@ dependencies = [
     "matplotlib>=3.10.5",
     "imgcat>=0.6.0",
     "pytest>=8.4.1",
+    "pandas-stubs==2.3.0.250703",
 ]
