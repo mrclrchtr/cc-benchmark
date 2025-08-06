@@ -1027,7 +1027,7 @@ def run_test_real(
         reasoning_effort=reasoning_effort,
         prompt_tokens=coder.total_tokens_sent,
         completion_tokens=coder.total_tokens_received,
-        thinking_tokens=thinking_tokens,
+        thinking_tokens=getattr(coder, 'total_thinking_tokens', thinking_tokens),
         chat_hashes=list(
             zip(
                 coder.chat_completion_call_hashes,

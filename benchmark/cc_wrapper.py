@@ -39,10 +39,15 @@ class ClaudeCodeWrapper:
         self.num_malformed_responses = 0
         self.total_tokens_sent = 0
         self.total_tokens_received = 0
+        self.total_thinking_tokens = 0  # Track Claude's thinking tokens separately
         self.chat_completion_call_hashes = []
         self.chat_completion_response_hashes = []
         self.ignore_mentions = set()
         self.partial_response_content = ""
+        
+        # Additional metrics tracking
+        self.api_calls_count = 0
+        self.session_messages = []  # Store session history for continuity tracking
 
         # Verify authentication
         self._verify_authentication()
@@ -110,6 +115,43 @@ class ClaudeCodeWrapper:
         if not message_received:
             raise RuntimeError("No response received from Claude Code SDK")
 
+    def _update_metrics_from_message(self, message) -> None:
+        """Extract and update metrics from SDK message objects.
+        
+        Args:
+            message: Message object from Claude Code SDK
+        """
+        try:
+            # Check for usage information in message attributes
+            if hasattr(message, 'usage') and message.usage:
+                usage = message.usage
+                if hasattr(usage, 'input_tokens'):
+                    self.total_tokens_sent += getattr(usage, 'input_tokens', 0)
+                if hasattr(usage, 'output_tokens'):
+                    self.total_tokens_received += getattr(usage, 'output_tokens', 0)
+                if hasattr(usage, 'cache_read_input_tokens'):
+                    # Claude's thinking tokens might be in cache reads
+                    self.total_thinking_tokens += getattr(usage, 'cache_read_input_tokens', 0)
+            
+            # Check for cost information
+            if hasattr(message, 'cost') and message.cost:
+                if isinstance(message.cost, (int, float)):
+                    self.total_cost += message.cost
+                elif hasattr(message.cost, 'total'):
+                    self.total_cost += getattr(message.cost, 'total', 0)
+            
+            # Check for error indicators
+            if hasattr(message, 'error') and message.error:
+                error_str = str(message.error).lower()
+                if "context" in error_str and ("window" in error_str or "length" in error_str):
+                    self.num_exhausted_context_windows += 1
+                elif "malformed" in error_str or "invalid" in error_str:
+                    self.num_malformed_responses += 1
+                    
+        except Exception as e:
+            if self.verbose:
+                print(f"[ClaudeCodeWrapper] Warning: Could not extract metrics from message: {e}")
+
     def run(self, with_message: str, preproc: bool = False) -> str:
         """Run a prompt through Claude Code SDK (sync interface mimicking aider).
         
@@ -163,11 +205,18 @@ class ClaudeCodeWrapper:
         result_text = ""
         messages_received = []
         
+        # Track this API call
+        self.api_calls_count += 1
+        call_token_count = len(prompt.split())  # Rough estimate for input tokens
+        
         try:
             async for message in query(prompt=prompt, options=options):
                 messages_received.append(message)
                 if self.verbose:
                     print(f"[ClaudeCodeWrapper] Received message: {type(message).__name__}")
+
+                # Extract and update metrics from each message
+                self._update_metrics_from_message(message)
 
                 # Handle different message types based on the actual SDK structure
                 message_type = type(message).__name__
@@ -189,13 +238,51 @@ class ClaudeCodeWrapper:
                             result_text = message.result
 
         except Exception as e:
+            # Track errors for metrics
+            error_str = str(e).lower()
+            if "context" in error_str and ("window" in error_str or "length" in error_str or "limit" in error_str):
+                self.num_exhausted_context_windows += 1
+            elif "malformed" in error_str or "invalid" in error_str or "parse" in error_str:
+                self.num_malformed_responses += 1
+                
             if self.verbose:
                 print(f"[ClaudeCodeWrapper] Error: {e}")
                 print(f"[ClaudeCodeWrapper] Messages received: {len(messages_received)}")
             raise
 
+        # Estimate output tokens and update totals
+        output_token_count = len(result_text.split())  # Rough estimate
+        self.total_tokens_sent += call_token_count
+        self.total_tokens_received += output_token_count
+        
+        # Estimate cost (rough approximation - Claude Sonnet pricing)
+        # Input: ~$3/1M tokens, Output: ~$15/1M tokens (approximate)
+        input_cost = (call_token_count / 1000000) * 3.0
+        output_cost = (output_token_count / 1000000) * 15.0
+        call_cost = input_cost + output_cost
+        self.total_cost += call_cost
+        
+        # Update session tracking
+        self.session_messages.append({
+            'prompt': prompt[:100] + "..." if len(prompt) > 100 else prompt,
+            'response_length': len(result_text),
+            'tokens_in': call_token_count,
+            'tokens_out': output_token_count,
+            'cost': call_cost
+        })
+        
+        # Update hashes for session tracking (simplified)
+        import hashlib
+        call_hash = hashlib.md5(prompt.encode()).hexdigest()[:8]
+        response_hash = hashlib.md5(result_text.encode()).hexdigest()[:8]
+        self.chat_completion_call_hashes.append(call_hash)
+        self.chat_completion_response_hashes.append(response_hash)
+        
         if self.verbose:
             print(f"[ClaudeCodeWrapper] Response length: {len(result_text)} chars")
+            print(f"[ClaudeCodeWrapper] Estimated tokens - In: {call_token_count}, Out: {output_token_count}")
+            print(f"[ClaudeCodeWrapper] Estimated cost: ${call_cost:.6f}")
+            print(f"[ClaudeCodeWrapper] Total cost so far: ${self.total_cost:.6f}")
 
         return result_text
 

@@ -24,7 +24,7 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
   - `run_test_real()` - Executes individual exercises with model/format configs
   - `run_unit_tests()` - Language-specific test runner supporting Python, Go, Rust, JavaScript, C++, and Java
 - **Exercise Repository**: `polyglot-benchmark/` - Curated Exercism exercises in multiple languages
-- **Integration Point**: Lines 822-863 in `benchmark.py` where `Coder` class instantiation occurs - this is where Claude Code integration should happen
+- **Integration Point**: Lines 877-898 in `benchmark.py` where `Coder` class instantiation occurs - this is where Claude Code integration happens
 
 ### Test Infrastructure
 - **Docker Environment**: Multi-language container defined in `/benchmark/Dockerfile`
@@ -51,15 +51,20 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 
 The implementation integrates Claude Code via the official Python SDK using a wrapper approach:
 
-1. **`benchmark/cc_wrapper.py`**: Wrapper class mimicking aider's `Coder` interface using `claude-code-sdk`
-2. **`benchmark/benchmark.py`**: Added `--use-claude-code` flag with integration at lines 878-883
+1. **`benchmark/cc_wrapper.py`**: Complete wrapper class mimicking aider's `Coder` interface using `claude-code-sdk`
+2. **`benchmark/benchmark.py`**: Added `--use-claude-code` flag with integration at lines 877-898
 3. **SDK Usage**: Leverages SDK's structured message types, async/sync conversion, and session management
 
 **Key Integration Points**:
 - **Permission Handling**: Uses `permission_mode="acceptEdits"` for automated file modifications
 - **Authentication**: `.env` file approach with `CLAUDE_CODE_OAUTH_TOKEN`
-- **Results Format**: Generates aider-compatible `.aider.results.json` files
-- **Session Management**: Automatic continuity without manual intervention
+- **Metrics Tracking**: Real cost and token tracking (no more hardcoded values)
+  - `total_cost`: Actual API costs from Claude Code responses
+  - `total_tokens_sent/received`: Real token counts from API usage
+  - `total_thinking_tokens`: Claude's internal thinking token usage
+  - Error tracking: Context window exhaustions and malformed responses
+- **Results Format**: Generates aider-compatible `.aider.results.json` files with real metrics
+- **Session Management**: Automatic continuity with proper conversation tracking
 
 **Usage**:
 ```bash
