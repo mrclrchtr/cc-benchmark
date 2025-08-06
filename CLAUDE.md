@@ -25,6 +25,11 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
   - **Authentication** (Simplified in M0_1): Uses `.env` file with `CLAUDE_CODE_OAUTH_TOKEN`
   - **Setup**: Run `./docker/setup-claude-auth.sh` or `cp .env.example .env` and add token
   - **Usage**: `./docker/docker.sh` automatically loads `.env` via `--env-file`
+- **Logging System**: Comprehensive structured logging for benchmark monitoring
+  - **Log File**: `logs/benchmark.log` (auto-created, rotated at 10MB, 5 backups)
+  - **Docker Integration**: Logs mounted via `-v $(pwd)/logs:/logs` volume
+  - **Real-time Monitoring**: `tail -f logs/benchmark.log` while benchmarks run
+  - **Log Levels**: INFO (progress), WARNING (issues), ERROR (failures), DEBUG (details)
 - **Test Commands** (mapped by file extension):
   - `.py` → `pytest`
   - `.rs` → `cargo test -- --include-ignored`

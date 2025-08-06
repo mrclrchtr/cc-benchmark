@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import datetime
 import json
+import logging
+import logging.handlers
 import os
 import random
 import re
@@ -49,10 +51,44 @@ app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
 load_dotenv(override=True)
 
 
+def setup_logging():
+    """Configure logging to write to both console and file."""
+    # Create logs directory if it doesn't exist
+    log_dir = Path("/logs" if os.environ.get("AIDER_DOCKER") else "logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    # Configure root logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    
+    # Remove any existing handlers
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+    
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    
+    # File handler with rotation
+    log_file = log_dir / "benchmark.log"
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file, maxBytes=10*1024*1024, backupCount=5  # 10MB max, 5 backups
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+    
+    return logger
+
+
 def find_latest_benchmark_dir():
     benchmark_dirs = [d for d in BENCHMARK_DNAME.iterdir() if d.is_dir()]
     if not benchmark_dirs:
-        print("Error: No benchmark directories found under tmp.benchmarks.")
+        logging.error("No benchmark directories found under tmp.benchmarks.")
         sys.exit(1)
 
     # Get current time and 24 hours ago
@@ -73,7 +109,7 @@ def find_latest_benchmark_dir():
             continue
 
     if not recent_dirs:
-        print("Error: No benchmark directories found from the last 24 hours.")
+        logging.error("No benchmark directories found from the last 24 hours.")
         sys.exit(1)
 
     # Find directory with most recently modified .md file
@@ -90,10 +126,10 @@ def find_latest_benchmark_dir():
                     latest_dir = d
 
     if not latest_dir:
-        print("Error: No .md files found in recent benchmark directories.")
+        logging.error("No .md files found in recent benchmark directories.")
         sys.exit(1)
 
-    print(f"Using the most recently updated benchmark directory: {latest_dir.name}")
+    logging.info(f"Using the most recently updated benchmark directory: {latest_dir.name}")
     return latest_dir
 
 
@@ -112,8 +148,8 @@ def show_stats(dirnames, graphs, stats_languages=None):
             continue
 
         if row.completed_tests != row.total_tests:
-            print(
-                f"Warning: {row.dir_name} is incomplete: {row.completed_tests} of {row.total_tests}"
+            logging.warning(
+                f"{row.dir_name} is incomplete: {row.completed_tests} of {row.total_tests}"
             )
 
         try:
@@ -149,13 +185,12 @@ def resolve_dirname(dirname, use_single_prior, make_new):
     priors = list(BENCHMARK_DNAME.glob(f"*--{dirname}"))
     if len(priors) == 1 and use_single_prior:
         dirname = priors[0].name
-        print(f"Using pre-existing {dirname}")
+        logging.info(f"Using pre-existing {dirname}")
     elif len(priors):
         if not make_new:
-            print(f"Prior runs of {dirname} exist, use --new or name one explicitly")
-            print()
+            logging.warning(f"Prior runs of {dirname} exist, use --new or name one explicitly")
             for prior in priors:
-                print(prior)
+                logging.info(f"Existing run: {prior}")
             return
 
     if not re.match(r"\d\d\d\d-\d\d-\d\d-", str(dirname)):
@@ -228,10 +263,13 @@ def main(
         False, "--use-claude-code", help="Use Claude Code instead of aider for benchmarking"
     ),
 ):
+    # Initialize logging
+    logger = setup_logging()
+    
     # Validate Claude Code availability
     if use_claude_code and ClaudeCodeWrapper is None:
-        print("Error: --use-claude-code flag specified but Claude Code SDK not available.")
-        print("Please ensure claude-code-sdk is installed: pip install claude-code-sdk")
+        logger.error("--use-claude-code flag specified but Claude Code SDK not available.")
+        logger.error("Please ensure claude-code-sdk is installed: pip install claude-code-sdk")
         sys.exit(1)
 
     repo = git.Repo(search_parent_directories=True)
@@ -247,7 +285,7 @@ def main(
         dirnames = []
 
     if len(dirnames) > 1 and not (stats_only or diffs_only):
-        print("Only provide 1 dirname unless running with --stats or --diffs")
+        logging.error("Only provide 1 dirname unless running with --stats or --diffs")
         return 1
 
     updated_dirnames = []
@@ -268,7 +306,7 @@ def main(
     dirname = updated_dirnames[0]
 
     if "AIDER_DOCKER" not in os.environ:
-        print("Warning: benchmarking runs unvetted code from GPT, run in a docker container")
+        logging.warning("Benchmarking runs unvetted code from GPT, run in a docker container")
         return
 
     assert BENCHMARK_DNAME.exists() and BENCHMARK_DNAME.is_dir(), BENCHMARK_DNAME
@@ -286,7 +324,7 @@ def main(
             lang_dirs = [d for d in lang_dirs if d.name.lower() in requested]
             dump(lang_dirs)
             if not lang_dirs:
-                print(f"No matching language directories found for: {languages}")
+                logging.error(f"No matching language directories found for: {languages}")
                 return []
 
         # Get all exercise dirs under exercises/practice for each language
@@ -304,15 +342,15 @@ def main(
     exercise_dirs = get_exercise_dirs(original_dname, languages)
 
     if not exercise_dirs:
-        print("No exercise directories found")
+        logging.error("No exercise directories found")
         return 1
 
     if clean and dirname.exists():
-        print("Cleaning up and replacing", dirname)
+        logging.info(f"Cleaning up and replacing {dirname}")
         dir_files = set(fn.name for fn in dirname.glob("*"))
         original_files = set(fn.name for fn in original_dname.glob("*"))
         if dir_files != original_files:
-            print("ERROR: will not delete dir that does not look like original tests", dirname)
+            logging.error(f"Will not delete directory that does not look like original tests: {dirname}")
             return
 
         dest = dirname.parent / "OLD" / dirname.name
@@ -323,7 +361,7 @@ def main(
         dirname.rename(dest)
 
     if not dirname.exists():
-        print(f"Copying {original_dname} -> {dirname} ...")
+        logging.info(f"Copying {original_dname} -> {dirname} ...")
         # Only copy the practice subdirs with exercises
         os.makedirs(dirname, exist_ok=True)
         for lang_dir in original_dname.iterdir():
@@ -334,7 +372,7 @@ def main(
                 dest_lang_dir = dirname / lang_dir.name / "exercises" / "practice"
                 os.makedirs(dest_lang_dir.parent, exist_ok=True)
                 shutil.copytree(practice_dir, dest_lang_dir)
-        print("...done")
+        logging.info("Copy completed")
 
     test_dnames = sorted(str(d.relative_to(original_dname)) for d in exercise_dirs)
 
@@ -347,11 +385,11 @@ def main(
             files_loaded = models.register_models([read_model_settings])
             if verbose:
                 if files_loaded:
-                    print(f"Loaded model settings from: {files_loaded[0]}")
+                    logging.info(f"Loaded model settings from: {files_loaded[0]}")
                 else:
-                    print(f"No model settings loaded from: {read_model_settings}")
+                    logging.warning(f"No model settings loaded from: {read_model_settings}")
         except Exception as e:
-            print(f"Error loading model settings: {e}")
+            logging.error(f"Error loading model settings: {e}")
             return 1
 
     if keywords:
@@ -421,9 +459,7 @@ def main(
             )
         all_results = run_test_threaded.gather(tqdm=True)
 
-    print()
-    print()
-    print()
+    logging.info("Benchmark execution completed")
     summarize_results(dirname)
 
     return 0
@@ -454,16 +490,13 @@ def show_diffs(dirnames):
             unchanged.add(testcase)
             continue
 
-        print()
-        print(testcase)
+        logging.info(f"\nTestcase: {testcase}")
         for outcome, dirname in zip(all_outcomes, dirnames):
-            print(outcome, f"{dirname}/{testcase}/.aider.chat.history.md")
+            logging.info(f"{outcome} {dirname}/{testcase}/.aider.chat.history.md")
 
     changed = set(testcases) - unchanged
-    print()
-    print("changed:", len(changed), ",".join(sorted(changed)))
-    print()
-    print("unchanged:", len(unchanged), ",".join(sorted(unchanged)))
+    logging.info(f"Changed: {len(changed)} tests - {','.join(sorted(changed))}")
+    logging.info(f"Unchanged: {len(unchanged)} tests - {','.join(sorted(unchanged))}")
 
 
 def load_results(dirname, stats_languages=None):
@@ -482,7 +515,7 @@ def load_results(dirname, stats_languages=None):
                 results = json.loads(fname.read_text())
                 all_results.append(results)
             except json.JSONDecodeError:
-                print("json.JSONDecodeError", fname)
+                logging.error(f"JSON decode error in file: {fname}")
                 continue
     return all_results
 
@@ -584,7 +617,7 @@ def summarize_results(dirname, stats_languages=None):
         setattr(res, f"pass_rate_{i + 1}", f"{pass_rate:.1f}")
         setattr(res, f"pass_num_{i + 1}", passed_tests[i])
 
-    print(f"- dirname: {dirname.name}")
+    logging.info(f"- dirname: {dirname.name}")
     style = None if res.completed_tests == res.total_tests else "red"
     console.print(f"  test_cases: {res.completed_tests}", style=style)
     for key, val in variants.items():
@@ -597,17 +630,17 @@ def summarize_results(dirname, stats_languages=None):
         console.print(f"  {key}: {val}", style=style)
 
     if res.reasoning_effort is not None:
-        print(f"  reasoning_effort: {res.reasoning_effort}")
+        logging.info(f"  reasoning_effort: {res.reasoning_effort}")
     if res.thinking_tokens is not None:
-        print(f"  thinking_tokens: {res.thinking_tokens}")
+        logging.info(f"  thinking_tokens: {res.thinking_tokens}")
 
     for i in range(tries):
-        print(f"  pass_rate_{i + 1}: {percents[i]:.1f}")
+        logging.info(f"  pass_rate_{i + 1}: {percents[i]:.1f}")
     for i in range(tries):
-        print(f"  pass_num_{i + 1}: {passed_tests[i]}")
+        logging.info(f"  pass_num_{i + 1}: {passed_tests[i]}")
 
     pct_well_formed = 1.0 - res.num_with_malformed_responses / res.completed_tests
-    print(f"  percent_cases_well_formed: {pct_well_formed * 100:.1f}")
+    logging.info(f"  percent_cases_well_formed: {pct_well_formed * 100:.1f}")
 
     show("error_outputs")
     show("num_malformed_responses")
@@ -620,28 +653,27 @@ def summarize_results(dirname, stats_languages=None):
     show("prompt_tokens", red=None)
     show("completion_tokens", red=None)
     show("test_timeouts")
-    print(f"  total_tests: {res.total_tests}")
+    logging.info(f"  total_tests: {res.total_tests}")
 
     if variants["model"]:
         a_model = set(variants["model"]).pop()
         command = f"aider --model {a_model}"
-        print(f"  command: {command}")
+        logging.info(f"  command: {command}")
 
-    print(f"  date: {date}")
-    print("  versions:", ",".join(versions))
+    logging.info(f"  date: {date}")
+    logging.info(f"  versions: {','.join(versions)}")
 
     res.avg_duration = res.duration / res.completed_tests
-    print(f"  seconds_per_case: {res.avg_duration:.1f}")
+    logging.info(f"  seconds_per_case: {res.avg_duration:.1f}")
 
-    print(f"  total_cost: {res.cost:.4f}")
+    logging.info(f"  total_cost: {res.cost:.4f}")
 
     res.avg_cost = res.cost / res.completed_tests
 
     projected_cost = res.avg_cost * res.total_tests
 
-    print()
-    print(
-        f"costs: ${res.avg_cost:.4f}/test-case, ${res.cost:.2f} total,"
+    logging.info(
+        f"Costs: ${res.avg_cost:.4f}/test-case, ${res.cost:.2f} total,"
         f" ${projected_cost:.2f} projected"
     )
 
@@ -689,9 +721,9 @@ def run_test(original_dname, testdir, *args, **kwargs):
     try:
         return run_test_real(original_dname, testdir, *args, **kwargs)
     except Exception:
-        print("=" * 40)
-        print("Test failed")
-        traceback.print_exc()
+        logging.error("=" * 40)
+        logging.error("Test failed")
+        logging.error(traceback.format_exc())
 
         testdir = Path(testdir)
         results_fname = testdir / ".aider.results.json"
@@ -719,7 +751,7 @@ def run_test_real(
     use_claude_code=False,
 ):
     if not os.path.isdir(testdir):
-        print("Not a dir:", testdir)
+        logging.error(f"Not a directory: {testdir}")
         return
 
     testdir = Path(testdir)
@@ -735,7 +767,7 @@ def run_test_real(
             # else:
             return res
         except JSONDecodeError:
-            print(f"{results_fname} failed to parse, redoing...")
+            logging.warning(f"{results_fname} failed to parse, redoing...")
 
     # Read solution and test files from config
     fnames = []
@@ -790,7 +822,7 @@ def run_test_real(
                 os.makedirs(src.parent, exist_ok=True)
                 shutil.copy(original_fname, src)
         else:
-            print(f"Warning: Solution file not found: {src}")
+            logging.warning(f"Solution file not found: {src}")
 
     file_list = " ".join(fname.name for fname in fnames)
 
@@ -840,7 +872,7 @@ def run_test_real(
     dump(main_model)
     dump(edit_format)
     show_fnames = ",".join(map(str, fnames))
-    print("fnames:", show_fnames)
+    logging.info(f"Processing files: {show_fnames}")
 
     # Integration point: Claude Code vs aider
     if use_claude_code:
@@ -848,7 +880,7 @@ def run_test_real(
         coder = ClaudeCodeWrapper(model=model_name, verbose=verbose)
         coder.set_cwd(testdir)
         if verbose:
-            print(f"Using Claude Code with model: {model_name}")
+            logging.info(f"Using Claude Code with model: {model_name}")
     else:
         # Original aider Coder creation
         coder = Coder.create(
@@ -877,6 +909,7 @@ def run_test_real(
     dur = 0
     test_outcomes = []
     for i in range(tries):
+        logging.info(f"Starting attempt {i+1}/{tries} for {testdir.name}")
         start = time.time()
 
         if no_aider:
@@ -909,18 +942,22 @@ def run_test_real(
             break
 
         try:
+            logging.info(f"Running unit tests for {testdir.name}")
             errors = run_unit_tests(original_dname, testdir, history_fname, test_files)
         except subprocess.TimeoutExpired:
             # try:
             #    errors = run_unit_tests(original_dname, testdir, history_fname, test_files)
             # except subprocess.TimeoutExpired:
             errors = "Tests timed out!"
+            logging.warning(f"Tests timed out for {testdir.name}")
             timeouts += 1
 
         if errors:
             test_outcomes.append(False)
+            logging.info(f"Test failed on attempt {i+1}/{tries} for {testdir.name}")
         else:
             test_outcomes.append(True)
+            logging.info(f"Test passed on attempt {i+1}/{tries} for {testdir.name}")
             break
 
         if replay:
@@ -931,7 +968,7 @@ def run_test_real(
         syntax_errors += sum(1 for line in errors if line.startswith("SyntaxError"))
         indentation_errors += sum(1 for line in errors if line.startswith("IndentationError"))
 
-        print(errors[-1])
+        logging.error(f"Test error: {errors[-1]}")
         errors = "\n".join(errors)
         instructions = errors
         instructions += prompts.test_failures.format(file_list=file_list)
@@ -943,10 +980,10 @@ def run_test_real(
         try:
             shutil.rmtree(target_dir)
             if verbose:
-                print(f"Cleaned up Rust target/debug directory: {target_dir}")
+                logging.debug(f"Cleaned up Rust target/debug directory: {target_dir}")
         except (OSError, shutil.Error, PermissionError) as e:
             if verbose:
-                print(f"Failed to clean up Rust target/debug directory: {e}")
+                logging.warning(f"Failed to clean up Rust target/debug directory: {e}")
 
     # Java build directories
     java_build_dir = testdir / "build"
@@ -954,10 +991,10 @@ def run_test_real(
         try:
             shutil.rmtree(java_build_dir)
             if verbose:
-                print(f"Cleaned up Java build directory: {java_build_dir}")
+                logging.debug(f"Cleaned up Java build directory: {java_build_dir}")
         except (OSError, shutil.Error, PermissionError) as e:
             if verbose:
-                print(f"Failed to clean up Java build directory: {e}")
+                logging.warning(f"Failed to clean up Java build directory: {e}")
 
     # Node.js node_modules directories
     node_modules_dir = testdir / "node_modules"
@@ -965,10 +1002,10 @@ def run_test_real(
         try:
             shutil.rmtree(node_modules_dir)
             if verbose:
-                print(f"Cleaned up Node.js node_modules directory: {node_modules_dir}")
+                logging.debug(f"Cleaned up Node.js node_modules directory: {node_modules_dir}")
         except (OSError, shutil.Error, PermissionError) as e:
             if verbose:
-                print(f"Failed to clean up Node.js node_modules directory: {e}")
+                logging.warning(f"Failed to clean up Node.js node_modules directory: {e}")
 
     results = dict(
         testdir=str(testdir),
@@ -1040,7 +1077,7 @@ def run_unit_tests(original_dname, testdir, history_fname, test_files):
         src = original_dname / Path(*testdir.parts[-4:]) / file_path
         dst = testdir / file_path
         if src.exists():
-            print("copying", src, dst)
+            logging.debug(f"Copying {src} to {dst}")
             os.makedirs(dst.parent, exist_ok=True)
             shutil.copy(src, dst)
 
@@ -1053,7 +1090,7 @@ def run_unit_tests(original_dname, testdir, history_fname, test_files):
                 content = re.sub(r"@Disabled\([^)]*\)\s*\n", "", content)
                 test_file.write_text(content)
 
-    print(" ".join(command))
+    logging.info(f"Running command: {' '.join(command)}")
 
     result = subprocess.run(
         command,
@@ -1075,7 +1112,7 @@ def run_unit_tests(original_dname, testdir, history_fname, test_files):
         fh.write(f"```\n{res}\n```")
 
     if not success:
-        print(f"Tests failed: {testdir}")
+        logging.error(f"Tests failed: {testdir}")
         return res
 
 

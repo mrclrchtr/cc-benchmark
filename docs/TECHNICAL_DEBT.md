@@ -63,6 +63,40 @@ This document tracks over-engineering and technical debt issues identified durin
 - [ ] Update documentation to reference new simplified approach
 - [ ] Consider removing old setup-claude-auth.sh script entirely
 
+## Resolved Issues
+
+### 6. Print Statement Inconsistency - RESOLVED
+**Issue**: Inconsistent debugging and progress output throughout benchmark system
+- **Location**: `benchmark/benchmark.py` - 29 print statements scattered throughout codebase
+- **Problems**: 
+  - No structured logging levels
+  - Mixed print/console.print usage
+  - No persistent log storage
+  - Difficult to monitor long-running processes
+- **Solution implemented**: Comprehensive structured logging system
+  - **Print Replacement**: All 29 print statements replaced with appropriate logging calls
+  - **Log Levels**: INFO (progress), WARNING (issues), ERROR (failures), DEBUG (details)
+  - **Dual Output**: Console and persistent file storage with rotation
+  - **Docker Integration**: Volume mounting for real-time log monitoring
+- **Impact resolved**: Users can now monitor benchmarks in real-time with `tail -f logs/benchmark.log`
+- **Status**: COMPLETED (2025-08-06)
+
+### 7. Docker Monitoring Visibility - RESOLVED
+**Issue**: No way to monitor long-running benchmark executions inside Docker containers
+- **Location**: Docker execution environment
+- **Problems**:
+  - No persistent log files accessible from host
+  - Console output lost when container exits
+  - Impossible to monitor progress of multi-hour benchmark runs
+  - Debugging failures required container inspection
+- **Solution implemented**: Docker log volume mounting and real-time access
+  - **Volume Mount**: `-v $(pwd)/logs:/logs` in docker.sh
+  - **Persistent Storage**: Logs survive container restarts
+  - **Real-time Access**: `tail -f logs/benchmark.log` from host while container runs
+  - **Rotation**: 10MB limit with 5 backups prevents disk space issues
+- **Impact resolved**: Complete visibility into benchmark execution from host system
+- **Status**: COMPLETED (2025-08-06)
+
 ## Lessons Learned
 
 1. **Start Simple**: Begin with standard practices, add complexity only when needed
