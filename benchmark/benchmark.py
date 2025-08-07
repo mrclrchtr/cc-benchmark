@@ -37,6 +37,7 @@ from aider.io import InputOutput
 
 # Import Claude Code wrapper for benchmarking (required for --use-claude-code flag)
 from cc_wrapper import ClaudeCodeWrapper
+from tracker import BenchmarkTracker, ExerciseStatus, BenchmarkState
 
 BENCHMARK_DNAME = Path(os.environ.get("CC_BENCHMARK_DIR", "tmp.benchmarks"))
 
@@ -397,6 +398,29 @@ def main(
     if num_tests > 0:
         test_dnames = test_dnames[:num_tests]
 
+    # Initialize tracking system
+    tracker = BenchmarkTracker(state_dir=dirname / ".tracker")
+    run_id = dirname.name
+    
+    # Extract languages from test_dnames
+    run_languages = list(set(dn.split('/')[0] for dn in test_dnames if '/' in dn))
+    
+    # Start tracking run
+    tracker.start_run(
+        run_id=run_id,
+        model=model,
+        languages=run_languages,
+        total_exercises=len(test_dnames),
+        config={
+            "edit_format": edit_format,
+            "tries": tries,
+            "threads": threads,
+            "use_claude_code": use_claude_code,
+            "commit_hash": commit_hash
+        }
+    )
+    tracker.update_state(BenchmarkState.RUNNING)
+    
     # Don't give up when benchmarking
     LONG_TIMEOUT = 24 * 60 * 60
     sendchat.RETRY_TIMEOUT = LONG_TIMEOUT
@@ -425,6 +449,7 @@ def main(
                 thinking_tokens,
                 read_model_settings,
                 use_claude_code,
+                tracker,  # Pass tracker to run_test
             )
 
             all_results.append(results)
@@ -453,11 +478,23 @@ def main(
                 thinking_tokens,
                 read_model_settings,
                 use_claude_code,
+                tracker,  # Pass tracker to run_test
             )
         all_results = run_test_threaded.gather(tqdm=True)
 
     logging.info("Benchmark execution completed")
     summarize_results(dirname)
+    
+    # Complete tracking and export report
+    tracker.update_state(BenchmarkState.COMPLETED)
+    report_path = tracker.export_report()
+    logging.info(f"Tracking report exported to: {report_path}")
+    
+    # Print final statistics
+    stats = tracker.get_statistics()
+    if "overall" in stats:
+        logging.info(f"Overall success rate: {stats['overall']['success_rate']}%")
+        logging.info(f"Passed: {stats['overall']['passed']}/{stats['overall']['total_exercises']}")
 
     return 0
 
@@ -736,12 +773,17 @@ def run_test_real(
     thinking_tokens: Optional[int] = None,
     read_model_settings=None,
     use_claude_code=False,
+    tracker: Optional[BenchmarkTracker] = None,
 ):
     if not os.path.isdir(testdir):
         logging.error(f"Not a directory: {testdir}")
         return
 
     testdir = Path(testdir)
+    
+    # Extract exercise name and language from path
+    exercise_name = testdir.name
+    language = str(testdir).split('/exercises/practice/')[0].split('/')[-1]
 
     history_fname = testdir / ".aider.chat.history.md"
 
@@ -755,6 +797,10 @@ def run_test_real(
             return res
         except JSONDecodeError:
             logging.warning(f"{results_fname} failed to parse, redoing...")
+    
+    # Start tracking this exercise
+    if tracker:
+        tracker.start_exercise(exercise_name, language, max_attempts=tries)
 
     # Read solution and test files from config
     fnames = []
@@ -1029,6 +1075,34 @@ def run_test_real(
     dump(results)
 
     results_fname.write_text(json.dumps(results, indent=4))
+    
+    # Complete tracking for this exercise
+    if tracker:
+        passed = test_outcomes[-1] if test_outcomes else False
+        error_msg = None
+        if not passed:
+            # Extract error message if available
+            if io.num_error_outputs > 0:
+                error_msg = f"Error outputs: {io.num_error_outputs}"
+            elif coder.num_exhausted_context_windows > 0:
+                error_msg = "Exhausted context window"
+            elif timeouts > 0:
+                error_msg = f"Test timeouts: {timeouts}"
+        
+        tracker.complete_exercise(
+            exercise_name,
+            language,
+            passed=passed,
+            error_message=error_msg,
+            metrics={
+                "cost": coder.total_cost,
+                "duration": dur,
+                "prompt_tokens": coder.total_tokens_sent,
+                "completion_tokens": coder.total_tokens_received,
+                "total_tokens": coder.total_tokens_sent + coder.total_tokens_received,
+                "attempts": len(test_outcomes)
+            }
+        )
 
     return results
 

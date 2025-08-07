@@ -27,6 +27,9 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 - **Benchmark Engine**: `/benchmark/benchmark.py` - Main orchestrator that runs exercises through AI models
   - `run_test_real()` - Executes individual exercises with model/format configs
   - `run_unit_tests()` - Language-specific test runner supporting Python, Go, Rust, JavaScript, C++, and Java
+- **Tracking System**: `/benchmark/tracker.py` - Real-time monitoring and state management
+  - Auto-detects new benchmark runs
+  - See `docs/architecture/tracking-system.md` for architecture details
 - **Exercise Repository**: `polyglot-benchmark/` - Curated Exercism exercises in multiple languages
 - **Integration Point**: `benchmark.py` main execution where `Coder` class instantiation occurs - this is where Claude Code integration happens
 
@@ -78,6 +81,18 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 - `--tries`: Number of attempts per exercise (default: 3)
 - `--verbose`: Enable detailed logging
 
+### Benchmark Monitoring
+```bash
+# Monitor benchmarks in real-time (auto-detects new runs)
+./monitor-benchmark.sh              # Auto-detect and switch to new runs
+./monitor-benchmark.sh --refresh 2  # Fast refresh rate
+./monitor-benchmark.sh --no-auto    # Disable auto-switching
+
+# Start monitor before benchmark (will wait for benchmark to start)
+./monitor-benchmark.sh              # Terminal 1
+./run-benchmark.sh python           # Terminal 2
+```
+
 ### Testing & Validation
 ```bash
 # Run all tests using Makefile
@@ -115,8 +130,10 @@ The implementation integrates Claude Code via the official Python SDK using a wr
 
 ### Core Files
 - **Benchmark Engine**: `/benchmark/benchmark.py` - Main orchestrator and Claude Code integration point
+- **Tracking System**: `/benchmark/tracker.py` - Real-time state tracking and monitoring
 - **Claude Code Wrapper**: `/benchmark/cc_wrapper.py` - SDK wrapper mimicking aider's `Coder` interface  
 - **Exercise Prompts**: `/benchmark/prompts.py` - Minimal templates for exercise instructions
+- **Monitor Script**: `/monitor-benchmark.sh` - CLI tool for real-time benchmark monitoring
 - **Development Tests**: `/dev-tests/` - Comprehensive Claude Code integration validation suite
 
 ### Output and Results
@@ -137,6 +154,7 @@ The implementation integrates Claude Code via the official Python SDK using a wr
   - `docs/tools/cc-sdk.md` - Python SDK documentation (`claude_code_sdk`)
   - `docs/tools/cc-models.md` - Available Claude Code models
   - `docs/architecture/logging.md` - Logging system documentation
+  - `docs/architecture/tracking-system.md` - Benchmark tracking system architecture
 - **Testing**: `tests/README.md` - How to run and implement tests
 
 # Available system commands
