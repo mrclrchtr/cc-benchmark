@@ -45,6 +45,17 @@ fi
 
 echo "✓ Claude Code CLI and SDK are ready"
 echo "✓ Token authentication validated"
+
+# Ensure polyglot-benchmark is accessible in the benchmarks directory
+# Only copy if source exists and destination doesn't (avoids redundant copies)
+if [ -d "/cc-benchmark/polyglot-benchmark" ]; then
+    if [ ! -d "/benchmarks/polyglot-benchmark" ]; then
+        echo "Setting up polyglot-benchmark in /benchmarks..."
+        cp -r /cc-benchmark/polyglot-benchmark /benchmarks/
+        echo "✓ polyglot-benchmark ready"
+    fi
+fi
+
 echo ""
 
 # Execute the original command

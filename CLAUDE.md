@@ -48,26 +48,32 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 
 **IMPORTANT**: Always run benchmarks in Docker containers for consistent environments. Never run benchmarks directly with local Python!
 
+#### Quick Start with run-benchmark.sh
 ```bash
-# Build and run benchmarks in Docker container (recommended)
-./docker/docker.sh
+# Convenience wrapper for common benchmark scenarios
+./run-benchmark.sh quick           # Quick test: 1 Python exercise
+./run-benchmark.sh python          # Default: 10 Python exercises  
+./run-benchmark.sh multi           # Multi-language: 5 exercises each (Python, JS, Go)
+./run-benchmark.sh full            # Full suite: all languages, 25 tests each
 
-# Inside Docker container, run benchmark with Claude Code
-uv run python benchmark/benchmark.py python --use-claude-code --languages python --num-tests 10 --new
-
-# Key flags:
-# --use-claude-code: Use Claude Code instead of aider
-# --languages: Specify language(s) to test (python, go, rust, javascript, cpp, java)
-# --num-tests: Number of exercises to run
-# --new: Start fresh benchmark run (avoids "prior runs exist" warning)
-# --tries: Number of attempts per exercise (default: 3)
-# --verbose: Enable detailed logging
+# With options
+./run-benchmark.sh python --tests 5 --model opus  # 5 Python tests with Opus
+./run-benchmark.sh custom --languages rust --num-tests 3  # Custom configuration
 ```
 
-**Docker Setup**:
+#### Docker Setup
 1. Copy environment file: `cp .env.example .env`
-2. Add your `CLAUDE_CODE_OAUTH_TOKEN` to `.env`
-3. Run: `./docker/docker.sh` (automatically loads `.env` via `--env-file`)
+2. Get OAuth token: `claude setup-token` and copy to `.env` as `CLAUDE_CODE_OAUTH_TOKEN`
+3. Use `./run-benchmark.sh` or see `docker/README.md` for direct Docker usage
+
+#### Benchmark Flags
+- `--use-claude-code`: Use Claude Code instead of aider
+- `--languages`: Specify language(s) to test (python, go, rust, javascript, cpp, java)
+- `--num-tests`: Number of exercises to run
+- `--model`: Model to use (sonnet, opus, haiku, etc.)
+- `--new`: Start fresh benchmark run (avoids "prior runs exist" warning)
+- `--tries`: Number of attempts per exercise (default: 3)
+- `--verbose`: Enable detailed logging
 
 ### Testing & Validation
 ```bash

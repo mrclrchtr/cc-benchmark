@@ -682,18 +682,8 @@ def summarize_results(dirname, stats_languages=None):
 
 def get_versions(commit_hashes):
     versions = set()
-    for hsh in commit_hashes:
-        if not hsh:
-            continue
-        hsh = hsh.split("-")[0]
-        try:
-            version = subprocess.check_output(
-                ["git", "show", f"{hsh}:aider/__init__.py"], universal_newlines=True
-            )
-            version = re.search(r'__version__ = "(.*)"', version).group(1)
-            versions.add(version)
-        except subprocess.CalledProcessError:
-            pass
+    # cc-benchmark doesn't track versions like aider did
+    # Original implementation looked up aider/__init__.py which we don't have
     return versions
 
 
