@@ -106,8 +106,8 @@ uv run python benchmark/models.py
 - `.py` → `pytest`
 - `.rs` → `cargo test -- --include-ignored`
 - `.go` → `go test ./...`
-- `.js` → `/aider/benchmark/npm-test.sh`
-- `.cpp` → `/aider/benchmark/cpp-test.sh`
+- `.js` → `./benchmark/pnpm-test.sh`
+- `.cpp` → `./benchmark/cpp-test.sh`
 - `.java` → `./gradlew test`
 
 **Docker Benchmarking Rule**: Always run benchmarks in Docker containers for consistent environments - never run benchmarks directly with local Python!

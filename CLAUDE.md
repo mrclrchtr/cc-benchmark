@@ -36,6 +36,7 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
   - **Setup**: `cp .env.example .env` and add token
   - **Usage**: `./docker/docker.sh` automatically loads `.env` via `--env-file`
   - **Package Manager**: pnpm for JavaScript dependencies (efficient and fast)
+  - **Note**: Claude Code CLI itself is installed via npm globally, but project JS dependencies use pnpm
   - **Build Optimization**: Multi-stage Docker build reduces image size and improves caching
 - **Logging System**: Comprehensive structured logging for benchmark monitoring
   - **Log File**: `logs/benchmark.log` (auto-created, rotated at 10MB, 5 backups)
