@@ -9,9 +9,12 @@ See [CLAUDE.md](../CLAUDE.md#docker-setup) for setup and usage instructions.
 ## Files Overview
 
 ### `Dockerfile`
-Multi-language development environment with:
+Multi-stage Docker build for optimized image size and build caching:
+- **Stage 1 (Builder)**: Compiles all languages and dependencies
+- **Stage 2 (Runtime)**: Lightweight runtime with only necessary components
 - **Languages**: Python 3.12.7, Go 1.21.5, Rust (latest), Node.js 20.x, Java 21
-- **Tools**: Claude Code CLI & SDK, pytest, uv, npm packages for JavaScript testing
+- **Tools**: Claude Code CLI & SDK, pytest, uv, pnpm-managed packages for JavaScript testing
+- **Package Manager**: pnpm for JavaScript dependencies (faster and more efficient than npm)
 - **Base**: Ubuntu Jammy with buildpack-deps
 
 ### `docker-entrypoint.sh`

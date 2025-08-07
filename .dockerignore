@@ -1,0 +1,77 @@
+# Git
+.git
+.gitignore
+.gitmodules
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg
+
+# Benchmark outputs (these are mounted as volumes)
+tmp.benchmarks/
+logs/
+
+# Documentation
+docs/
+
+# Tests (we'll run tests inside container if needed)
+tests/
+dev-tests/
+
+# Environment files (mounted via --env-file)
+.env
+.env.*
+
+# Node modules (installed fresh in container)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Miscellaneous
+README.md
+LICENSE
+CHANGELOG.md
+*.log

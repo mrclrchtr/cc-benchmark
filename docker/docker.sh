@@ -52,7 +52,7 @@ if [ -n "$DOCKER_FLAGS" ]; then
            -e HISTFILESIZE=20000 \
            -e CC_BENCHMARK_DOCKER=1 \
            -e CC_BENCHMARK_DIR=/benchmarks \
-           -e UV_LINK_MODE=copy \  # Performance: Copies packages instead of symlinks
+           -e UV_LINK_MODE=copy \
            cc-benchmark \
            $DOCKER_CMD
 else
@@ -73,7 +73,7 @@ else
            -e HISTFILESIZE=20000 \
            -e CC_BENCHMARK_DOCKER=1 \
            -e CC_BENCHMARK_DIR=/benchmarks \
-           -e UV_LINK_MODE=copy \  # Performance: Copies packages instead of symlinks
+           -e UV_LINK_MODE=copy \
            cc-benchmark \
            bash -c "$DOCKER_CMD"
 fi

@@ -1041,7 +1041,7 @@ def run_unit_tests(original_dname, testdir, history_fname, test_files):
         ".py": ["pytest"],
         ".rs": ["cargo", "test", "--", "--include-ignored"],
         ".go": ["go", "test", "./..."],
-        ".js": ["/cc-benchmark/benchmark/npm-test.sh"],
+        ".js": ["/cc-benchmark/benchmark/pnpm-test.sh"],
         ".cpp": ["/cc-benchmark/benchmark/cpp-test.sh"],
         ".java": ["./gradlew", "test"],
     }

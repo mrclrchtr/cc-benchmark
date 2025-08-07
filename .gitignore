@@ -327,3 +327,6 @@ tmp.benchmarks
 .idea/git_toolbox_prj.xml
 
 .claude/settings.local.json
+
+# Node.js
+node_modules/

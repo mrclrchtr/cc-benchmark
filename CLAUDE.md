@@ -31,10 +31,12 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 - **Integration Point**: `benchmark.py` main execution where `Coder` class instantiation occurs - this is where Claude Code integration happens
 
 ### Test Infrastructure
-- **Docker Environment**: Multi-language container defined in `/benchmark/Dockerfile`
+- **Docker Environment**: Multi-stage build container defined in `/docker/Dockerfile`
   - **Authentication**: Uses `.env` file with `CLAUDE_CODE_OAUTH_TOKEN`
   - **Setup**: `cp .env.example .env` and add token
   - **Usage**: `./docker/docker.sh` automatically loads `.env` via `--env-file`
+  - **Package Manager**: pnpm for JavaScript dependencies (efficient and fast)
+  - **Build Optimization**: Multi-stage Docker build reduces image size and improves caching
 - **Logging System**: Comprehensive structured logging for benchmark monitoring
   - **Log File**: `logs/benchmark.log` (auto-created, rotated at 10MB, 5 backups)
   - **Docker Integration**: Logs mounted via `-v $(pwd)/logs:/logs` volume
@@ -64,7 +66,7 @@ The project forks aider's proven benchmark infrastructure and adapts it to test 
 #### Docker Setup
 1. Copy environment file: `cp .env.example .env`
 2. Get OAuth token: `claude setup-token` and copy to `.env` as `CLAUDE_CODE_OAUTH_TOKEN`
-3. Use `./run-benchmark.sh` or see `docker/README.md` for direct Docker usage
+3. Use `./run-benchmark.sh` or see [`docker/README.md`](docker/README.md) for direct Docker usage
 
 #### Benchmark Flags
 - `--use-claude-code`: Use Claude Code instead of aider
