@@ -158,3 +158,25 @@ The `docker-entrypoint.sh` automatically copies `polyglot-benchmark` exercises t
 
 ### Environment Variables
 Uses `CC_BENCHMARK_*` prefixed variables for benchmark configuration (evolved from original aider fork).
+
+## Docker Development & Testing
+
+### Building the Image
+```bash
+# Build optimized image with caching
+./docker/docker_build.sh
+
+# Force rebuild without cache
+docker build --no-cache -f docker/Dockerfile -t cc-benchmark .
+```
+
+### Testing Installation
+```bash
+# Test all language installations
+docker run --rm --entrypoint="" cc-benchmark bash -c \
+  'eval "$(pyenv init -)" && python --version && go version && rustc --version && node --version && pnpm --version'
+
+# Test Claude Code SDK
+docker run --rm --entrypoint="" cc-benchmark bash -c \
+  'eval "$(pyenv init -)" && python -c "import claude_code_sdk; print(\"Claude Code SDK:\", claude_code_sdk.__version__)"'
+```

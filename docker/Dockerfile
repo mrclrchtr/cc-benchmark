@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Multi-stage Dockerfile for CC-Benchmark
 # Stage 1: Builder stage with all compilation tools
 FROM buildpack-deps:jammy AS builder
@@ -8,20 +9,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pyenv (keeping as requested)
-RUN curl -fsSL https://pyenv.run | bash
+# Install pyenv and Python in one layer
+RUN curl -fsSL https://pyenv.run | bash && \
+    export PATH="/root/.pyenv/bin:$PATH" && \
+    export PYENV_ROOT="/root/.pyenv" && \
+    eval "$(pyenv init -)" && \
+    eval "$(pyenv virtualenv-init -)" && \
+    pyenv install 3.12.7 && \
+    pyenv global 3.12.7 && \
+    /root/.pyenv/versions/3.12.7/bin/python -m pip install --upgrade pip setuptools wheel uv
 
 # Set up pyenv environment
 ENV PATH="/root/.pyenv/bin:$PATH"
 ENV PYENV_ROOT="/root/.pyenv"
 ENV PATH="/root/.pyenv/versions/3.12.7/bin:$PATH"
-
-# Install Python 3.12.7 via pyenv and essential Python tools
-RUN eval "$(pyenv init -)" && \
-    eval "$(pyenv virtualenv-init -)" && \
-    pyenv install 3.12.7 && \
-    pyenv global 3.12.7 && \
-    python -m pip install --upgrade pip setuptools wheel uv
 
 # Install Go with architecture detection
 RUN ARCH=$(uname -m) && \
@@ -96,23 +97,27 @@ RUN ln -s /usr/lib/node_modules/pnpm/bin/pnpm.cjs /usr/local/bin/pnpm && \
 # Set up working directory
 WORKDIR /cc-benchmark
 
+# Copy Python dependency files first for better caching
+COPY pyproject.toml uv.lock ./
+
+# Install Python project dependencies (cached layer)
+RUN eval "$(pyenv init -)" && \
+    uv pip install --system --no-cache-dir -e . && \
+    uv pip install --system --no-cache-dir claude-code-sdk
+
 # Copy project files
 COPY . /cc-benchmark
 
-# Install Python project dependencies and compile
+# Compile Python files
 RUN eval "$(pyenv init -)" && \
-    uv pip install --system --no-cache-dir -e /cc-benchmark && \
-    uv pip install --system --no-cache-dir claude-code-sdk && \
     python -m compileall /cc-benchmark
 
 # Set Claude Code environment variables
 ENV CLAUDE_CODE_NO_TELEMETRY=1
 ENV CLAUDE_CODE_HEADLESS=1
 
-# Configure git
+# Configure git and setup entrypoint
 RUN git config --global --add safe.directory /cc-benchmark
-
-# Copy and set up entrypoint script
 COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
