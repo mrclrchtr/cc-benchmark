@@ -12,9 +12,9 @@ This document tracks all project milestones and their completion status.
 - **M2**: Technical Debt Resolution - [DONE] (Metrics integration working)
 
 ### Next Steps
-1. **Plan M3**: Full benchmark implementation across multiple languages
-2. **Execute comprehensive testing** with established baseline from M1
-3. **Begin comparative analysis** of Claude Code vs aider performance
+1. **Execute M3**: Full benchmark implementation across multiple languages now ready to begin
+2. **Comprehensive multi-language testing** with validated MVP foundation from M1/M2
+3. **Generate definitive performance data** for Claude Code vs aider comparison
 
 ## Active Milestones
 
@@ -29,7 +29,7 @@ This document tracks all project milestones and their completion status.
 1. [M2-Technical_Debt_Resolution.md](milestones/M2-Technical_Debt_Resolution.md) - [DONE]
 
 ### Phase 3 - Full Benchmark
-_To be defined after M1 re-validation_
+1. [M3-Full_Benchmark.md](milestones/M3-Full_Benchmark.md) - [PENDING] Comprehensive multi-language benchmark expansion
 
 ### Phase 4 - Analysis & Sharing
 _To be defined after M3 completion_
